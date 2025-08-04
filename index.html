@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>流程天命 - 英雄之旅</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="text-gray-200">
+
+    <div id="notification"></div>
+
+    <!-- Faction Selection Modal -->
+    <div id="faction-selection-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden items-center justify-center p-4">
+        <div class="module-container p-8 rounded-xl shadow-2xl w-full max-w-3xl text-center border-2 border-amber-500/50">
+            <h2 class="text-4xl font-calligraphy text-amber-200 mb-4">欢迎你，天命人！</h2>
+            <p class="text-gray-300 mb-8 text-lg">在开启征途之前，你必须做出一个重要的选择。<br>你的道路，将决定这个世界的未来……</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="faction-card border-2 border-sky-400/50 p-6 rounded-lg hover:bg-sky-400/10 transition-colors">
+                    <h3 class="text-3xl font-calligraphy text-sky-300 mb-3">天命</h3>
+                    <p class="text-gray-400 mb-6 min-h-[72px]">遵循宇宙的秩序与法则，维护流程的稳定与和谐，相信每一次精准的执行都在巩固世界的基石。</p>
+                    <button data-faction="tianming" class="faction-btn w-full btn bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-6 rounded-lg">我选择秩序</button>
+                </div>
+                <div class="faction-card border-2 border-red-500/50 p-6 rounded-lg hover:bg-red-500/10 transition-colors">
+                    <h3 class="text-3xl font-calligraphy text-red-400 mb-3">逆熵</h3>
+                    <p class="text-gray-400 mb-6 min-h-[72px]">打破陈旧的规则与束缚，在混乱中寻求创新与突破，相信每一次伟大的变革都源于对现状的颠覆。</p>
+                    <button data-faction="nishang" class="faction-btn w-full btn bg-red-700 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-lg">我选择变革</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Other Modals -->
+    <div id="restart-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+        <div class="module-container p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+            <h3 class="text-2xl font-bold text-white mb-4">确认操作</h3>
+            <p class="text-gray-300 mb-8">您确定要重新学习所有课程吗？<br><strong class="text-yellow-400">您的学习进度将被清空，但所有已获得的学分和排名将被保留。</strong></p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-restart-btn" class="btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">取消</button>
+                <button id="confirm-restart-btn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">确认重置</button>
+            </div>
+        </div>
+    </div>
+    <div id="delete-confirm-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 hidden items-center justify-center p-4">
+        <div class="module-container p-8 rounded-xl shadow-2xl w-full max-w-md text-center">
+            <h3 class="text-2xl font-bold text-white mb-4">确认删除</h3>
+            <p id="delete-confirm-message" class="text-gray-300 mb-8">您确定要删除这个项目吗？<br><strong class="text-red-400">此操作不可撤销。</strong></p>
+            <div class="flex justify-center space-x-4">
+                <button id="cancel-delete-btn" class="btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-lg">取消</button>
+                <button id="confirm-delete-btn" class="btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <main id="app-container" class="relative">
+        
+        <section id="landing-view" class="view active">
+            <div class="w-full">
+                <div id="opening-container">
+                    <header class="fixed top-0 left-0 right-0 z-20 bg-transparent">
+                        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                            <div class="text-xl font-bold text-white font-calligraphy tracking-widest">流程天命</div>
+                            <button id="new-login-btn" class="text-white font-semibold hover:text-amber-400 transition-colors">登录 / 注册</button>
+                        </div>
+                    </header>
+                    <div class="ken-burns-bg"></div>
+                    <div id="narrative-overlay"><p id="subtitle"></p></div>
+                    <div id="scroll-indicator"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg></div>
+                </div>
+                <div id="main-content">
+                    <main>
+                        <section id="hub" class="min-h-screen flex items-center justify-center bg-black pt-24 pb-12">
+                            <div class="container mx-auto px-4 fade-in-up">
+                                <div class="text-center mb-12">
+                                    <h1 class="text-5xl text-amber-100 font-calligraphy tracking-wider">天命征途</h1>
+                                    <p class="text-lg text-gray-400 mt-2">星图指引，英名永存。此为汝之道，亦为汝之荣耀。</p>
+                                    <button id="new-start-btn" class="mt-8 btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg">开启征途</button>
+                                </div>
+                                <div class="grid lg:grid-cols-2 gap-8 md:gap-12">
+                                    <div class="hub-card p-6 md:p-8">
+                                        <h2 class="text-3xl text-center text-amber-300 mb-6 font-calligraphy">修炼星图</h2>
+                                        <div class="flex flex-col space-y-4">
+                                            <div class="flex items-center justify-between"><div class="path-node"><div class="w-16 h-16 mx-auto mb-2 bg-gray-800 border-2 border-amber-600 rounded-full flex items-center justify-center text-2xl font-calligraphy">启</div><p class="font-semibold">天命人</p></div><div class="path-line"></div><div class="path-node"><div class="w-16 h-16 mx-auto mb-2 bg-gray-800 border-2 border-amber-700 rounded-full flex items-center justify-center text-2xl font-calligraphy">行</div><p class="font-semibold">行者</p></div><div class="path-line"></div><div class="path-node"><div class="w-16 h-16 mx-auto mb-2 bg-gray-800 border-2 border-amber-800 rounded-full flex items-center justify-center text-2xl font-calligraphy">觉</div><p class="font-semibold">佛陀</p></div></div>
+                                            <div class="flex items-center justify-around"><div class="path-node"><div class="w-16 h-16 mx-auto mb-2 bg-gray-800 border-2 border-amber-900 rounded-full flex items-center justify-center text-2xl font-calligraphy">刚</div><p class="font-semibold">金刚</p></div><div class="path-line max-w-xs"></div><div class="path-node"><div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-br from-amber-500 to-red-700 border-2 border-amber-400 rounded-full flex items-center justify-center text-2xl font-calligraphy">圣</div><p class="font-semibold">斗战胜佛</p></div></div>
+                                        </div>
+                                    </div>
+                                    <div class="hub-card p-6 md:p-8">
+                                        <h2 class="text-3xl text-center text-amber-300 mb-4 font-calligraphy">封神榜</h2>
+                                        <div class="flex justify-center border-b border-amber-500/30 mb-4">
+                                            <button id="landing-personal-tab" class="leaderboard-tab active" data-target="landing-personal-board">个人榜</button>
+                                            <button id="landing-faction-tab" class="leaderboard-tab" data-target="landing-faction-board">阵营榜</button>
+                                        </div>
+                                        <div id="landing-leaderboards">
+                                            <div id="landing-personal-board" class="leaderboard-content space-y-2"></div>
+                                            <div id="landing-faction-board" class="leaderboard-content space-y-3 hidden"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                        <section class="content-section text-center">
+                            <div class="fade-in-up">
+                                <h2 class="text-2xl text-amber-400 mb-2 font-calligraphy">第一境：流程天命人</h2>
+                                <h3 class="text-4xl md:text-5xl text-white mb-6">流程认知与启蒙</h3>
+                                <p class="text-lg text-gray-400 max-w-2xl">万物皆有其道，流程亦然。在此，你将洞悉万物背后的秩序，建立共同语言，开启慧眼，识别身边的每一个流程脉络。</p>
+                            </div>
+                        </section>
+                    </main>
+                </div>
+            </div>
+        </section>
+
+        <section id="auth-view" class="view flex-col items-center justify-center p-4">
+            <div class="w-full max-w-md">
+                <div class="text-center mb-8"><button id="back-to-landing-btn" class="text-blue-400 hover:text-blue-300">&larr; 返回主页</button></div>
+                <div class="module-container p-8 rounded-xl shadow-2xl">
+                    <h2 id="form-title" class="text-3xl font-bold text-center text-white mb-8">用户登录</h2>
+                    <form id="auth-form">
+                        <div class="space-y-6">
+                            <input type="email" id="auth-input" placeholder="邮箱" class="input-field w-full p-3 rounded-lg" required>
+                            <input type="password" id="password-input" placeholder="密码" class="input-field w-full p-3 rounded-lg" required>
+                        </div>
+                        <button id="submit-btn" type="submit" class="w-full mt-8 py-3 rounded-lg btn btn-primary font-bold text-lg">登录</button>
+                    </form>
+                    <p class="text-center mt-6 text-sm"><span id="prompt-text">还没有账户？</span><a href="#" id="switch-mode-btn" class="font-semibold text-blue-400 hover:text-blue-300">立即注册</a></p>
+                </div>
+            </div>
+        </section>
+
+        <section id="main-app-view" class="view flex-col">
+            <header id="main-header" class="bg-slate-900/50 backdrop-blur-lg border-b border-slate-700/50 sticky top-0 z-40">
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8"><div class="flex items-center justify-between h-16"><div class="flex items-center"><span class="font-bold text-xl text-white">🚀 流程管理在线学习平台</span></div><div id="user-info" class="flex items-center space-x-4 text-white"><span id="user-greeting" class="text-sm font-medium"></span><button id="admin-view-btn" class="hidden text-sm font-bold bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-full btn" title="进入管理后台">管理后台</button><button id="restart-btn" class="text-sm font-medium text-yellow-400 hover:text-yellow-300 transition-colors" title="重新学习所有课程">重新学习</button><button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded-full btn" title="退出登录">退出</button></div></div></div>
+            </header>
+            <div id="learning-content-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex-grow">
+                <div id="category-selection-view" class="view"><header class="text-center mb-12"><h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400">学习地图</h1><p class="text-gray-400 mt-4 text-lg">选择一个篇章，开启你的征程！</p></header><div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div></div>
+                <div id="chapter-selection-view" class="view"><header class="text-center mb-16 relative"><button id="back-to-categories-btn" class="absolute top-1/2 -translate-y-1/2 left-0 p-2 rounded-full hover:bg-gray-700/50 transition-colors" title="返回学习地图"><svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button><h1 id="chapter-view-title" class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-violet-500"></h1><p id="chapter-view-desc" class="text-gray-400 mt-4 text-lg"></p></header><div id="chapters-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div></div>
+                <div id="chapter-detail-view" class="view"><div class="module-container rounded-xl overflow-hidden flex flex-col md:flex-row" style="height: 75vh;"><aside id="sidebar" class="w-full md:w-80 bg-slate-900/80 text-gray-300 flex flex-col flex-shrink-0 border-r border-slate-700/50"><div id="sidebar-header" class="p-6 border-b border-slate-700/50"></div><nav class="flex-1 overflow-y-auto p-2"><ul id="sidebar-nav-list" class="space-y-1"></ul></nav><div class="p-4 mt-auto"><button id="back-to-chapters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg btn">返回章节列表</button></div></aside><main id="content-area" class="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto"></main></div></div>
+            </div>
+            <div id="admin-management-view" class="view admin-view-bg text-gray-800 flex-grow"><div class="flex-1 flex flex-col overflow-hidden"><main class="flex-1 overflow-x-hidden overflow-y-auto p-6"><div id="admin-breadcrumb" class="mb-4 text-sm text-gray-500"></div><div id="admin-category-list-view"><div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold text-gray-700">篇章管理</h2><div><button id="admin-add-category-btn" class="btn btn-primary font-bold py-2 px-4 rounded-lg">＋ 新增篇章</button><button id="back-to-learning-btn" class="btn bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg ml-2">返回学习平台</button></div></div><div id="admin-categories-table-container" class="bg-white p-6 rounded-lg shadow-md"></div></div><div id="admin-chapter-list-view" class="hidden"><div class="flex justify-between items-center mb-4"><h2 id="admin-chapter-list-title" class="text-2xl font-semibold text-gray-700"></h2><button id="admin-add-chapter-btn" class="btn btn-primary font-bold py-2 px-4 rounded-lg">＋ 新增章节</button></div><div id="admin-chapters-table-container" class="bg-white p-6 rounded-lg shadow-md"></div></div><div id="admin-section-list-view" class="hidden"><div class="flex justify-between items-center mb-4"><h2 id="admin-section-list-title" class="text-2xl font-semibold text-gray-700"></h2><button id="admin-add-section-btn" class="btn btn-primary font-bold py-2 px-4 rounded-lg">＋ 新增小节</button></div><div id="admin-sections-table-container" class="bg-white p-6 rounded-lg shadow-md"></div></div><div id="admin-block-editor-view" class="hidden"><div class="flex justify-between items-center mb-4"><h2 id="admin-editor-section-title" class="text-2xl font-semibold text-gray-700"></h2><button id="admin-add-new-block-btn" class="btn btn-primary font-bold py-2 px-4 rounded-lg">＋ 新增内容块</button></div><div id="admin-blocks-list" class="space-y-4 mb-6"></div></div></main></div></div>
+        </section>
+
+        <section id="immersive-viewer-view" class="view flex-col h-screen">
+            <header id="immersive-header" class="flex-shrink-0"><div class="container mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16"><h2 id="immersive-title" class="text-lg font-bold text-white truncate"></h2><button id="close-immersive-view-btn" class="p-2 rounded-full hover:bg-slate-700 transition-colors" title="关闭"><svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button></div></header>
+            <main id="immersive-content" class="flex-1 bg-black relative"></main>
+        </section>
+    </main>
+
+    <div id="leaderboard-container" style="display: none;">
+        <div id="leaderboard-icon">🏆</div>
+        <div id="leaderboard-panel" class="module-container p-4 rounded-xl shadow-2xl"><h2 class="text-xl text-center font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-400 mb-4">学分英雄榜</h2><div id="leaderboard-list" class="space-y-2"></div></div>
+    </div>
+
+    <div id="admin-modal-backdrop">
+        <div id="form-modal" class="bg-white rounded-xl shadow-2xl w-full max-w-2xl m-4 hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b flex-shrink-0"><h2 id="modal-title" class="text-2xl font-bold"></h2></div>
+            <form id="modal-form" class="p-6 space-y-4 overflow-y-auto flex-grow"></form>
+            <div class="p-6 bg-gray-50 border-t flex justify-end space-x-3 flex-shrink-0"><button id="cancel-modal-btn" class="btn bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded-lg">取消</button><button id="save-modal-btn" class="btn btn-primary font-bold py-2 px-4 rounded-lg">保存</button></div>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
