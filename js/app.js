@@ -1,9 +1,9 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v1.6] Adds logic to fetch and display both personal and faction leaderboards on the landing page.
+ * [v1.7] Fixes a ReferenceError by correctly importing resetUserProgressState.
  */
-import { AppState } from './state.js';
+import { AppState, resetUserProgressState } from './state.js'; // [FIXED]
 import { UI } from './ui.js';
 import { ApiService } from './services/api.js';
 import { AuthView } from './views/auth.js';

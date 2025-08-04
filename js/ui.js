@@ -1,24 +1,47 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
+ * [v1.3] Adds elements for the new landing page leaderboards.
  */
 import { AppState } from './state.js';
 
 export const UI = {
     elements: {
+        // Global elements
         notification: document.getElementById('notification'),
         factionModal: { container: document.getElementById('faction-selection-modal') },
         restartModal: { container: document.getElementById('restart-confirm-modal'), confirmBtn: document.getElementById('confirm-restart-btn'), cancelBtn: document.getElementById('cancel-restart-btn') },
         deleteConfirmModal: { container: document.getElementById('delete-confirm-modal'), message: document.getElementById('delete-confirm-message'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
         leaderboardContainer: document.getElementById('leaderboard-container'),
         leaderboardList: document.getElementById('leaderboard-list'),
+
+        // Top-level view containers
         landingView: document.getElementById('landing-view'),
         authView: document.getElementById('auth-view'),
         mainAppView: document.getElementById('main-app-view'),
+        
+        // Immersive (Video/Document) Viewer
         immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
-        landing: { loginBtn: document.getElementById('new-login-btn'), startBtn: document.getElementById('new-start-btn'), subtitle: document.getElementById('subtitle'), scrollIndicator: document.getElementById('scroll-indicator'), },
+
+        // Landing Page elements
+        landing: { 
+            loginBtn: document.getElementById('new-login-btn'), 
+            startBtn: document.getElementById('new-start-btn'), 
+            subtitle: document.getElementById('subtitle'), 
+            scrollIndicator: document.getElementById('scroll-indicator'),
+            personalTab: document.getElementById('landing-personal-tab'),
+            factionTab: document.getElementById('landing-faction-tab'),
+            personalBoard: document.getElementById('landing-personal-board'),
+            factionBoard: document.getElementById('landing-faction-board')
+        },
+
+        // Auth View elements
         auth: { backToLandingBtn: document.getElementById('back-to-landing-btn'), form: document.getElementById('auth-form'), title: document.getElementById('form-title'), submitBtn: document.getElementById('submit-btn'), prompt: document.getElementById('prompt-text'), switchBtn: document.getElementById('switch-mode-btn'), authInput: document.getElementById('auth-input'), passwordInput: document.getElementById('password-input') },
+
+        // Main App View elements
         mainApp: { header: document.getElementById('main-header'), adminViewBtn: document.getElementById('admin-view-btn'), userGreeting: document.getElementById('user-greeting'), logoutBtn: document.getElementById('logout-btn'), restartBtn: document.getElementById('restart-btn'), categoryView: document.getElementById('category-selection-view'), categoryGrid: document.getElementById('categories-grid'), chapterView: document.getElementById('chapter-selection-view'), chapterTitle: document.getElementById('chapter-view-title'), chapterDesc: document.getElementById('chapter-view-desc'), chapterGrid: document.getElementById('chapters-grid'), backToCategoriesBtn: document.getElementById('back-to-categories-btn'), detailView: document.getElementById('chapter-detail-view'), sidebarHeader: document.getElementById('sidebar-header'), sidebarNav: document.getElementById('sidebar-nav-list'), contentArea: document.getElementById('content-area'), backToChaptersBtn: document.getElementById('back-to-chapters-btn'), },
+
+        // Admin Panel elements
         admin: { container: document.getElementById('admin-management-view'), breadcrumb: document.getElementById('admin-breadcrumb'), backToLearningBtn: document.getElementById('back-to-learning-btn'), categoryListView: document.getElementById('admin-category-list-view'), categoriesTableContainer: document.getElementById('admin-categories-table-container'), chapterListView: document.getElementById('admin-chapter-list-view'), chapterListTitle: document.getElementById('admin-chapter-list-title'), chaptersTableContainer: document.getElementById('admin-chapters-table-container'), sectionListView: document.getElementById('admin-section-list-view'), sectionListTitle: document.getElementById('admin-section-list-title'), sectionsTableContainer: document.getElementById('admin-sections-table-container'), blockEditorView: document.getElementById('admin-block-editor-view'), editorSectionTitle: document.getElementById('admin-editor-section-title'), blocksList: document.getElementById('admin-blocks-list'), addCategoryBtn: document.getElementById('admin-add-category-btn'), addChapterBtn: document.getElementById('admin-add-chapter-btn'), addSectionBtn: document.getElementById('admin-add-section-btn'), addNewBlockBtn: document.getElementById('admin-add-new-block-btn'), modal: { backdrop: document.getElementById('admin-modal-backdrop'), container: document.getElementById('form-modal'), form: document.getElementById('modal-form'), title: document.getElementById('modal-title'), saveBtn: document.getElementById('save-modal-btn'), cancelBtn: document.getElementById('cancel-modal-btn'), } },
     },
     showNotification(message, type = 'success') {
