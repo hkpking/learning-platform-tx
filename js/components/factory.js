@@ -58,7 +58,8 @@ export const ComponentFactory = {
                 if (!AppState.userProgress.awardedPointsBlocks.has(block.id)) {
                     try {
                         UI.showNotification("回答正确! 获得 10 学分!", "success");
-                        await ApiService.addPoints(AppState.user.email, 10);
+                        // [CONSISTENCY CHANGE] Pass user ID instead of email
+                        await ApiService.addPoints(AppState.user.id, 10);
                         AppState.userProgress.awardedPointsBlocks.add(block.id);
                         CourseView.updateLeaderboard();
                     } catch (e) { UI.showNotification(e.message, "error"); }

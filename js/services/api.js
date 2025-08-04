@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v1.6] Adds a new function to fetch the faction leaderboard.
+ * [v1.7] Updates the addPoints function to use a robust 'upsert_score' RPC.
  */
 const SUPABASE_URL = 'https://mfxlcdsrnzxjslrfaawz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGxjZHNybnp4anNscmZhYXd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQyODMsImV4cCI6MjA2NzI2MDI4M30.wTuqqQkOP2_ZwfUU_xM0-X9YjkM39-kewjN41Pxa_wA';
@@ -80,14 +80,32 @@ export const ApiService = {
         const { error } = await this.db.rpc('reset_user_progress');
         if (error) throw new Error('重置进度失败');
     },
-    async addPoints(userEmail, points) {
-        const { error } = await this.db.rpc("add_points", { user_email: userEmail, points_to_add: points });
-        if (error) throw new Error(`积分更新失败: ${error.message}`);
+
+    /**
+     * [MODIFIED] 为用户增加分数。
+     * 调用数据库函数 upsert_score 来原子化地处理更新或插入操作，确保为所有用户（无论新旧）正确记分。
+     * @param {string} userId - 用户的UUID。
+     * @param {number} points - 要增加的分数。
+     */
+    async addPoints(userId, points) {
+        const { error } = await this.db.rpc('upsert_score', {
+            user_id_input: userId,
+            points_to_add: points
+        });
+
+        if (error) {
+            console.error("RPC 'upsert_score' failed:", error);
+            throw new Error(`积分更新失败: ${error.message}`);
+        }
     },
+
     async signUp(email, password) {
         const { data, error } = await this.db.auth.signUp({ email, password });
         if (error) throw error;
         if (data.user) { 
+            // 注意：新用户注册时，upsert_score函数会自动处理scores表的创建，
+            // 但在这里保留显式插入可以作为一种双重保障。
+            // 同时，profile的创建仍然是必要的。
             await this.db.from('scores').insert([{ user_id: data.user.id, username: data.user.email, points: 0 }]);
             await this.db.from('profiles').insert([{ id: data.user.id, role: 'user' }]);
         }
