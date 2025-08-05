@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v1.9] Implements side-by-side leaderboard layout.
+ * [v2.1] Updated with new department-based factions.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -10,11 +10,40 @@ import { AuthView } from './views/auth.js';
 import { CourseView } from './views/course.js';
 import { AdminView } from './views/admin.js';
 
+// [NEW] Centralized faction information for scalability
+const FACTION_MAP = {
+    it_dept: { name: 'IT技术部', color: 'blue' },
+    im_dept: { name: '信息管理部', color: 'cyan' },
+    pmo_dept: { name: '项目综合管理部', color: 'indigo' },
+    dm_dept: { name: '数据管理部', color: 'emerald' },
+    strategy_dept: { name: '战略管理部', color: 'amber' },
+    logistics_dept: { name: '物流IT部', color: 'orange' },
+    aoc_dept: { name: '项目AOC', color: 'rose' },
+    '3333_dept': { name: '3333', color: 'purple' },
+    // Fallback for old data or any unknown factions
+    tianming: { name: 'IT技术部', color: 'blue' }, // For smooth transition
+    nishang: { name: '项目综合管理部', color: 'indigo' }, // For smooth transition
+    default: { name: '未知部门', color: 'gray' }
+};
+
+const getFactionInfo = (factionId) => {
+    return FACTION_MAP[factionId] || FACTION_MAP.default;
+};
+
 const App = {
     init() {
         this.bindEvents();
         this.initLandingPage();
-        // Rely on onAuthStateChange to handle initial session
+        ApiService.db.auth.onAuthStateChange((_, session) => {
+            if (session) {
+                this.handleLogin(session.user);
+            } else {
+                AppState.user = null; AppState.profile = null;
+                resetUserProgressState();
+                UI.switchTopLevelView('landing');
+                this.updateLandingPageLeaderboards();
+            }
+        });
     },
     bindEvents() {
         UI.elements.landing.loginBtn.addEventListener('click', () => UI.switchTopLevelView('auth'));
@@ -32,25 +61,11 @@ const App = {
         UI.elements.restartModal.confirmBtn.addEventListener('click', () => this.handleConfirmRestart());
         AdminView.bindAdminEvents();
         
-        // [REMOVED] Tab switching event listeners are no longer needed.
-
         const factionModal = UI.elements.factionModal.container;
         factionModal.addEventListener('click', (e) => {
             const button = e.target.closest('.faction-btn');
             if (button) {
-                const faction = button.dataset.faction;
-                this.handleFactionSelection(faction);
-            }
-        });
-
-        ApiService.db.auth.onAuthStateChange((event, session) => {
-            if (event === 'SIGNED_IN' && session) {
-                this.handleLogin(session.user);
-            } else if (event === 'SIGNED_OUT') {
-                AppState.user = null; AppState.profile = null;
-                resetUserProgressState();
-                UI.switchTopLevelView('landing');
-                this.updateLandingPageLeaderboards();
+                this.handleFactionSelection(button.dataset.faction);
             }
         });
     },
@@ -75,9 +90,7 @@ const App = {
         const animatedElements = document.querySelectorAll('.fade-in-up');
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('is-visible');
-                }
+                if (entry.isIntersecting) entry.target.classList.add('is-visible');
             });
         }, { threshold: 0.2 });
         animatedElements.forEach(el => observer.observe(el));
@@ -101,30 +114,45 @@ const App = {
             } else {
                 personalBoard.innerHTML = personalData.map((p, i) => {
                     const rank = i + 1;
-                    const icon = ['🥇', '🥈', '🥉'][rank - 1] || `<span class="text-lg mr-5 ml-1">${rank}</span>`;
-                    return `<div class="leaderboard-item flex items-center"><span class="text-2xl mr-4">${icon}</span><span class="font-semibold text-lg flex-grow">${p.username.split('@')[0]}</span><span class="text-yellow-400 font-bold">${p.points}</span></div>`;
+                    const isCurrentUser = AppState.user && p.user_id === AppState.user.id;
+                    const icon = ['🥇', '🥈', '🥉'][rank - 1] || `<span class="rank-number">${rank}</span>`;
+                    return `<div class="personal-leaderboard-item rank-${rank} ${isCurrentUser ? 'current-user' : ''}">
+                                <div class="rank-icon">${icon}</div>
+                                <div class="player-name">${p.username.split('@')[0]}</div>
+                                <div class="player-score">${p.points}</div>
+                            </div>`;
                 }).join('');
             }
 
             if (!factionData || factionData.length === 0) {
-                UI.renderEmpty(factionBoard, '暂无阵营排名');
+                UI.renderEmpty(factionBoard, '暂无部门排名');
             } else {
-                factionBoard.innerHTML = factionData.map((f, i) => {
-                    const rank = i + 1;
-                    const icon = ['🥇', '🥈', '🥉'][rank - 1] || `<span class="text-lg mr-5 ml-1">${rank}</span>`;
-                    const factionName = f.faction === 'tianming' ? '天命' : '逆熵';
-                    const factionColor = f.faction === 'tianming' ? 'text-sky-400' : 'text-red-400';
-                    return `<div class="leaderboard-item flex items-center"><span class="text-2xl mr-4">${icon}</span><div class="flex-grow"><span class="font-semibold text-lg ${factionColor}">${factionName}</span><p class="text-xs text-gray-400">${f.total_members} 名成员 / 总分 ${f.total_points}</p></div><span class="text-yellow-400 font-bold text-xl">${parseFloat(f.average_score).toFixed(0)} <span class="text-sm font-normal text-gray-400">均分</span></span></div>`;
+                factionBoard.innerHTML = factionData.map(f => {
+                    const factionInfo = getFactionInfo(f.faction);
+                    return `<div class="faction-leaderboard-item faction-${factionInfo.color}">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="faction-name faction-name-${factionInfo.color}">${factionInfo.name}</h3>
+                                        <div class="faction-stats">
+                                            <span>👥 ${f.total_members} 名成员</span>
+                                            <span>|</span>
+                                            <span>⭐ ${f.total_points} 总分</span>
+                                        </div>
+                                    </div>
+                                    <div class="faction-score">
+                                        <div class="avg-score">${parseFloat(f.average_score).toFixed(0)}</div>
+                                        <div class="avg-label">均分</div>
+                                    </div>
+                                </div>
+                            </div>`;
                 }).join('');
             }
         } catch (error) {
             UI.renderError(personalBoard, '个人榜加载失败');
-            UI.renderError(factionBoard, '阵营榜加载失败');
+            UI.renderError(factionBoard, '部门榜加载失败');
             console.error(error);
         }
     },
-
-    // [REMOVED] The switchLandingLeaderboard function is no longer needed.
 
     async handleLogin(user) {
         if (AppState.user && AppState.user.id === user.id) return;
@@ -160,7 +188,8 @@ const App = {
             const updatedProfile = await ApiService.updateProfileFaction(AppState.user.id, faction);
             AppState.profile = updatedProfile; 
             this.hideFactionSelection();
-            UI.showNotification(`你已加入【${faction === 'tianming' ? '天命' : '逆熵'}】阵营！`, 'success');
+            const factionInfo = getFactionInfo(faction);
+            UI.showNotification(`你已加入【${factionInfo.name}】！`, 'success');
             this.loadMainAppData();
         } catch (error) {
             console.error("Error during faction selection:", error);

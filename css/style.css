@@ -68,19 +68,156 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 @keyframes bounce { 0%, 20%, 50%, 80%, 100% { transform: translateY(0); } 40% { transform: translateY(-10px); } 60% { transform: translateY(-5px); } }
 #scroll-indicator svg { animation: bounce 2s infinite; }
 #main-content { position: relative; z-index: 5; background-color: #000; }
-.hub-card { background: rgba(10, 10, 10, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(180, 83, 9, 0.4); border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-.path-node { position: relative; text-align: center; }
-.path-line { height: 2px; background: linear-gradient(to right, transparent, #b45309, transparent); flex-grow: 1; opacity: 0.5; }
-@media (max-width: 768px) { .path-line { display: none; } }
-.leaderboard-item { border-bottom: 1px solid rgba(180, 83, 9, 0.2); padding: 0.75rem 0.5rem; transition: background-color 0.3s; }
-.leaderboard-item:hover { background-color: rgba(180, 83, 9, 0.1); }
 .content-section { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
 
-/* [REMOVED] The tab styles below are no longer needed.
-.leaderboard-tab { padding: 0.5rem 1.5rem; font-size: 1.125rem; font-weight: 600; color: #a1a1aa; border-bottom: 3px solid transparent; transform: translateY(2px); transition: all 0.3s ease; }
-.leaderboard-tab:hover { color: #fcd34d; }
-.leaderboard-tab.active { color: #fbbf24; border-bottom-color: #fbbf24; }
-.leaderboard-content.hidden { display: none; }
-*/
+/* --- Hub 美化样式 --- */
+.hub-card {
+    background: rgba(10, 10, 10, 0.6);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(180, 83, 9, 0.4);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+.hub-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    text-align: center;
+    font-size: 1.875rem; /* 3xl */
+    color: #fcd34d; /* amber-300 */
+    margin-bottom: 1.5rem; /* mb-6 */
+}
+.hub-card:hover {
+    border-color: rgba(252, 211, 77, 0.6);
+    transform: translateY(-4px);
+}
+
+/* 修炼星图 */
+.path-node { position: relative; text-align: center; }
+.path-node-icon {
+    width: 4rem; height: 4rem; margin-left: auto; margin-right: auto; margin-bottom: 0.5rem;
+    background-color: #1e293b; /* slate-800 */
+    border: 2px solid #b45309; /* amber-700 */
+    border-radius: 9999px; /* rounded-full */
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Ma Shan Zheng', cursive; font-size: 1.5rem; /* 2xl */
+    transition: all 0.3s ease;
+}
+.path-node-label { font-weight: 600; color: #cbd5e1; }
+.path-node.current-milestone .path-node-icon {
+    border-color: #f59e0b; /* amber-500 */
+    color: #f59e0b;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+    animation: pulse-glow 2s infinite alternate;
+}
+@keyframes pulse-glow {
+    from { box-shadow: 0 0 10px rgba(245, 158, 11, 0.4); }
+    to { box-shadow: 0 0 25px rgba(245, 158, 11, 0.8); }
+}
+.path-node-icon.is-final {
+    background-image: linear-gradient(to bottom right, #f59e0b, #dc2626);
+    border-color: #fbbf24; /* amber-400 */
+}
+.path-line { height: 2px; background: linear-gradient(to right, transparent, #b45309, transparent); flex-grow: 1; opacity: 0.3; }
+.path-line-complete { height: 2px; background: linear-gradient(to right, #f59e0b, #b45309, transparent); flex-grow: 1; opacity: 0.8; }
+@media (max-width: 768px) { .path-line, .path-line-complete { display: none; } }
+
+/* 部门榜 */
+.faction-leaderboard-item {
+    padding: 1rem;
+    border-radius: 6px;
+    border-left: 4px solid;
+    transition: background-color 0.3s ease;
+}
+.faction-leaderboard-item:hover { background-color: rgba(255,255,255,0.05); }
+.faction-name { font-weight: 700; font-size: 1.25rem; }
+.faction-stats { font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem; }
+.faction-score { text-align: right; }
+.faction-score .avg-score { font-size: 1.5rem; font-weight: 700; color: #fcd34d; }
+.faction-score .avg-label { font-size: 0.875rem; color: #94a3b8; }
+
+/* 个人榜 */
+.personal-leaderboard-item {
+    display: grid;
+    grid-template-columns: 2rem 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    transition: background-color 0.3s;
+}
+.personal-leaderboard-item:last-child { border-bottom: none; }
+.personal-leaderboard-item:hover { background-color: rgba(255, 255, 255, 0.05); }
+.personal-leaderboard-item.rank-1, .personal-leaderboard-item.rank-2, .personal-leaderboard-item.rank-3 {
+    background-image: linear-gradient(to right, rgba(252, 211, 77, 0.08), transparent);
+    border-left: 2px solid #fcd34d;
+    margin-left: -0.5rem; /* to offset border */
+    padding-left: calc(0.5rem - 2px);
+}
+.personal-leaderboard-item.current-user {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-left: 2px solid #3b82f6;
+    margin-left: -0.5rem;
+    padding-left: calc(0.5rem - 2px);
+}
+.rank-icon { font-size: 1.5rem; text-align: center; }
+.rank-number { font-size: 1rem; text-align: center; color: #94a3b8; }
+.player-name { font-weight: 600; color: #e2e8f0; }
+.player-score { font-weight: 700; color: #fcd34d; }
+
+/* --- Department Color Styles --- */
+.faction-leaderboard-item.faction-blue { border-color: #60a5fa; background-color: rgba(96, 165, 250, 0.05); }
+.faction-leaderboard-item.faction-cyan { border-color: #22d3ee; background-color: rgba(34, 211, 238, 0.05); }
+.faction-leaderboard-item.faction-indigo { border-color: #818cf8; background-color: rgba(129, 140, 248, 0.05); }
+.faction-leaderboard-item.faction-emerald { border-color: #34d399; background-color: rgba(52, 211, 153, 0.05); }
+.faction-leaderboard-item.faction-amber { border-color: #fcd34d; background-color: rgba(252, 211, 77, 0.05); }
+.faction-leaderboard-item.faction-orange { border-color: #fb923c; background-color: rgba(251, 146, 60, 0.05); }
+.faction-leaderboard-item.faction-rose { border-color: #f472b6; background-color: rgba(244, 114, 182, 0.05); }
+.faction-leaderboard-item.faction-purple { border-color: #a78bfa; background-color: rgba(167, 139, 250, 0.05); }
+.faction-leaderboard-item.faction-gray { border-color: #9ca3af; background-color: rgba(156, 163, 175, 0.05); }
+.faction-name.faction-name-blue { color: #93c5fd; }
+.faction-name.faction-name-cyan { color: #67e8f9; }
+.faction-name.faction-name-indigo { color: #a5b4fc; }
+.faction-name.faction-name-emerald { color: #6ee7b7; }
+.faction-name.faction-name-amber { color: #fde047; }
+.faction-name.faction-name-orange { color: #fcd34d; }
+.faction-name.faction-name-rose { color: #fda4af; }
+.faction-name.faction-name-purple { color: #c4b5fd; }
+.faction-name.faction-name-gray { color: #d1d5db; }
+
+/* --- [NEW] Advanced Vortex Animation Styles --- */
+.vortex-container {
+    margin-top: 2rem;
+    position: relative;
+    width: 350px;
+    height: 350px;
+    margin-left: auto;
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+#vortex-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+#new-start-btn {
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.3);
+    animation: pulse-button 2.5s infinite;
+}
+@keyframes pulse-button {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.3);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 25px rgba(251, 191, 36, 0.7), 0 0 50px rgba(251, 191, 36, 0.5);
+    }
+}
