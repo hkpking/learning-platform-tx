@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v1.7] Updates the addPoints function to use a robust 'upsert_score' RPC.
+ * [v1.8] Fixes profile creation conflict and getUserProgress error.
  */
 const SUPABASE_URL = 'https://mfxlcdsrnzxjslrfaawz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGxjZHNybnp4anNscmZhYXd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQyODMsImV4cCI6MjA2NzI2MDI4M30.wTuqqQkOP2_ZwfUU_xM0-X9YjkM39-kewjN41Pxa_wA';
@@ -45,11 +45,14 @@ export const ApiService = {
 
     async getProfile(userId) {
         let { data, error } = await this.db.from('profiles').select('role, faction').eq('id', userId).single();
+        // 如果查询出错，且错误原因是“没有找到记录”
         if (error && error.code === 'PGRST116') {
+            // 则为该用户创建一个新的档案，这是一种健壮的“get or create”模式
             const { data: newProfile, error: insertError } = await this.db.from('profiles').insert([{ id: userId, role: 'user' }]).select('role, faction').single();
-            if (insertError) throw new Error('无法为现有用户创建档案。');
+            if (insertError) throw new Error('无法为新用户创建档案。');
             return newProfile;
         } else if (error) {
+            // 如果是其他未知错误，则抛出
             throw new Error('获取用户档案时出错。');
         }
         return data;
@@ -63,15 +66,25 @@ export const ApiService = {
     },
 
     async getUserProgress(userId) {
-        const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId).single();
-        if (error && error.code !== 'PGRST116') {
-            return { completed: [], awarded: [] };
+        // [FIX] 修复 406 Not Acceptable 错误
+        // 不使用 .single()，而是查询一个列表，这样即使用户没有进度（返回空列表），也不会报错
+        const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId);
+        
+        if (error) {
+            // 如果有其他非预期的错误，则抛出
+            console.error('Error fetching user progress:', error);
+            throw new Error('获取用户进度失败');
         }
+
+        // 如果查询成功但没有数据（新用户），则返回一个默认的空进度对象
+        const progress = data && data.length > 0 ? data[0] : null;
+
         return {
-            completed: data ? data.completed_blocks || [] : [],
-            awarded: data ? data.awarded_points_blocks || [] : []
+            completed: progress ? progress.completed_blocks || [] : [],
+            awarded: progress ? progress.awarded_points_blocks || [] : []
         };
     },
+
     async saveUserProgress(userId, progressData) {
         const { error } = await this.db.from('user_progress').upsert({ user_id: userId, completed_blocks: progressData.completed, awarded_points_blocks: progressData.awarded, updated_at: new Date() }, { onConflict: 'user_id' });
         if (error) throw new Error(`进度保存失败: ${error.message}`);
@@ -81,12 +94,6 @@ export const ApiService = {
         if (error) throw new Error('重置进度失败');
     },
 
-    /**
-     * [MODIFIED] 为用户增加分数。
-     * 调用数据库函数 upsert_score 来原子化地处理更新或插入操作，确保为所有用户（无论新旧）正确记分。
-     * @param {string} userId - 用户的UUID。
-     * @param {number} points - 要增加的分数。
-     */
     async addPoints(userId, points) {
         const { error } = await this.db.rpc('upsert_score', {
             user_id_input: userId,
@@ -100,17 +107,15 @@ export const ApiService = {
     },
 
     async signUp(email, password) {
+        // [FIX] 修复 409 Conflict 错误
+        // 移除这里的 profile 和 score 创建逻辑。
+        // getProfile 函数已有“get or create”逻辑，而 upsert_score 函数能自动处理新用户的分数记录。
+        // 这使得 signUp 函数只专注于“注册”这一核心职责。
         const { data, error } = await this.db.auth.signUp({ email, password });
         if (error) throw error;
-        if (data.user) { 
-            // 注意：新用户注册时，upsert_score函数会自动处理scores表的创建，
-            // 但在这里保留显式插入可以作为一种双重保障。
-            // 同时，profile的创建仍然是必要的。
-            await this.db.from('scores').insert([{ user_id: data.user.id, username: data.user.email, points: 0 }]);
-            await this.db.from('profiles').insert([{ id: data.user.id, role: 'user' }]);
-        }
         return data;
     },
+
     async signIn(email, password) {
         const { data, error } = await this.db.auth.signInWithPassword({ email, password });
         if (error) throw error;

@@ -1,9 +1,9 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v1.7] Fixes a ReferenceError by correctly importing resetUserProgressState.
+ * [v1.8] Fixes leaderboard data synchronization issues.
  */
-import { AppState, resetUserProgressState } from './state.js'; // [FIXED]
+import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
 import { ApiService } from './services/api.js';
 import { AuthView } from './views/auth.js';
@@ -49,6 +49,8 @@ const App = {
                 AppState.user = null; AppState.profile = null;
                 resetUserProgressState();
                 UI.switchTopLevelView('landing');
+                // [FIX] 当用户登出时，刷新首页排行榜数据
+                this.updateLandingPageLeaderboards();
             }
         });
     },
@@ -181,9 +183,12 @@ const App = {
 
     async loadMainAppData() {
         try {
-            const [progress, categories] = await Promise.all([
+            // [FIX] 登录成功进入主应用时，也主动更新一次首页排行榜数据
+            this.updateLandingPageLeaderboards();
+            
+            const [progress, categories, _] = await Promise.all([
                 ApiService.getUserProgress(AppState.user.id),
-                ApiService.fetchLearningMap()
+                ApiService.fetchLearningMap(),
             ]);
             AppState.userProgress.completedBlocks = new Set(progress.completed);
             AppState.userProgress.awardedPointsBlocks = new Set(progress.awarded);
@@ -193,8 +198,12 @@ const App = {
             UI.elements.mainApp.userGreeting.textContent = `欢迎, ${AppState.user.email.split('@')[0]}`;
             UI.switchTopLevelView('main');
             CourseView.showCategoryView();
-            CourseView.updateLeaderboard();
-            ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => CourseView.updateLeaderboard()).subscribe();
+            CourseView.updateLeaderboard(); // 这个只更新悬浮窗
+            ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
+                // [FIX] 当分数变化时，同时更新悬浮窗和首页排行榜
+                CourseView.updateLeaderboard();
+                this.updateLandingPageLeaderboards();
+            }).subscribe();
         } catch (error) {
             console.error("Failed to load main app data:", error);
             UI.showNotification(`加载数据失败: ${error.message}`, 'error');
