@@ -77,7 +77,10 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .content-section { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
+
+/* [REMOVED] The tab styles below are no longer needed.
 .leaderboard-tab { padding: 0.5rem 1.5rem; font-size: 1.125rem; font-weight: 600; color: #a1a1aa; border-bottom: 3px solid transparent; transform: translateY(2px); transition: all 0.3s ease; }
 .leaderboard-tab:hover { color: #fcd34d; }
 .leaderboard-tab.active { color: #fbbf24; border-bottom-color: #fbbf24; }
 .leaderboard-content.hidden { display: none; }
+*/

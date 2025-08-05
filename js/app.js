@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v1.8] Fixes leaderboard data synchronization issues.
+ * [v1.9] Implements side-by-side leaderboard layout.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -31,8 +31,9 @@ const App = {
         UI.elements.restartModal.cancelBtn.addEventListener('click', () => this.toggleRestartModal(false));
         UI.elements.restartModal.confirmBtn.addEventListener('click', () => this.handleConfirmRestart());
         AdminView.bindAdminEvents();
-        UI.elements.landing.personalTab.addEventListener('click', () => this.switchLandingLeaderboard('personal'));
-        UI.elements.landing.factionTab.addEventListener('click', () => this.switchLandingLeaderboard('faction'));
+        
+        // [REMOVED] Tab switching event listeners are no longer needed.
+
         const factionModal = UI.elements.factionModal.container;
         factionModal.addEventListener('click', (e) => {
             const button = e.target.closest('.faction-btn');
@@ -49,7 +50,6 @@ const App = {
                 AppState.user = null; AppState.profile = null;
                 resetUserProgressState();
                 UI.switchTopLevelView('landing');
-                // [FIX] 当用户登出时，刷新首页排行榜数据
                 this.updateLandingPageLeaderboards();
             }
         });
@@ -124,20 +124,7 @@ const App = {
         }
     },
 
-    switchLandingLeaderboard(boardType) {
-        const { personalTab, factionTab, personalBoard, factionBoard } = UI.elements.landing;
-        if (boardType === 'personal') {
-            personalTab.classList.add('active');
-            factionTab.classList.remove('active');
-            personalBoard.classList.remove('hidden');
-            factionBoard.classList.add('hidden');
-        } else {
-            personalTab.classList.remove('active');
-            factionTab.classList.add('active');
-            personalBoard.classList.add('hidden');
-            factionBoard.classList.remove('hidden');
-        }
-    },
+    // [REMOVED] The switchLandingLeaderboard function is no longer needed.
 
     async handleLogin(user) {
         if (AppState.user && AppState.user.id === user.id) return;
@@ -183,10 +170,9 @@ const App = {
 
     async loadMainAppData() {
         try {
-            // [FIX] 登录成功进入主应用时，也主动更新一次首页排行榜数据
             this.updateLandingPageLeaderboards();
             
-            const [progress, categories, _] = await Promise.all([
+            const [progress, categories] = await Promise.all([
                 ApiService.getUserProgress(AppState.user.id),
                 ApiService.fetchLearningMap(),
             ]);
@@ -198,9 +184,8 @@ const App = {
             UI.elements.mainApp.userGreeting.textContent = `欢迎, ${AppState.user.email.split('@')[0]}`;
             UI.switchTopLevelView('main');
             CourseView.showCategoryView();
-            CourseView.updateLeaderboard(); // 这个只更新悬浮窗
+            CourseView.updateLeaderboard(); 
             ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
-                // [FIX] 当分数变化时，同时更新悬浮窗和首页排行榜
                 CourseView.updateLeaderboard();
                 this.updateLandingPageLeaderboards();
             }).subscribe();
