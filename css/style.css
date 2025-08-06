@@ -72,6 +72,17 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
 
+#hub-background-container {
+    background-image: url('../assets/images/hub-background.jpg');
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    border-radius: 0.75rem;
+    position: relative;
+}
+
 /* --- Hub 美化样式 --- */
 .hub-card {
     background: rgba(10, 10, 10, 0.6);
@@ -186,7 +197,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .faction-name.faction-name-purple { color: #c4b5fd; }
 .faction-name.faction-name-gray { color: #d1d5db; }
 
-/* --- [NEW] Advanced Vortex Animation Styles --- */
+/* --- Advanced Vortex Animation Styles --- */
 .vortex-container {
     margin-top: 2rem;
     position: relative;
