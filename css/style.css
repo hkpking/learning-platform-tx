@@ -20,7 +20,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 #leaderboard-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 50; transition: opacity 0.3s, visibility 0.3s; }
 #leaderboard-icon { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: linear-gradient(to right, #f97316, #f59e0b); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: transform 0.3s; }
 #leaderboard-icon:hover { transform: scale(1.1); }
-#leaderboard-panel { position: absolute; bottom: 4.5rem; right: 0; width: 300px; max-height: 400px; overflow-y: auto; opacity: 0; visibility: hidden; transform: translateY(20px); transition: all 0.3s ease-out; }
+#leaderboard-panel { position: absolute; bottom: 4.5rem; right: 0; width: 300px; opacity: 0; visibility: hidden; transform: translateY(20px); transition: all 0.3s ease-out; }
 #leaderboard-container:hover #leaderboard-panel { opacity: 1; visibility: visible; transform: translateY(0); }
 .rank-1 .rank-badge { background-color: #ffd700; color: #422c00; } .rank-2 .rank-badge { background-color: #c0c0c0; color: #363636; } .rank-3 .rank-badge { background-color: #cd7f32; color: #4a2a0c; }
 .section-group-title { padding: 0.75rem 0.5rem; font-weight: 700; color: #94a3b8; border-top: 1px solid #334155; margin-top: 0.5rem; }
@@ -71,17 +71,6 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .content-section { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 4rem 2rem; }
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
-
-/* #hub-background-container {
-    background-image: url('../assets/images/hub-background.jpg');
-    background-size: cover;
-    background-position: center center;
-    background-repeat: no-repeat;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-    border-radius: 0.75rem;
-    position: relative;
-} */
 
 /* --- Hub 美化样式 --- */
 .hub-card {
@@ -197,38 +186,18 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .faction-name.faction-name-purple { color: #c4b5fd; }
 .faction-name.faction-name-gray { color: #d1d5db; }
 
-/* --- Advanced Vortex Animation Styles --- */
-/* .vortex-container {
-    margin-top: 2rem;
-    position: relative;
-    width: 350px;
-    height: 350px;
-    margin-left: auto;
-    margin-right: auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* --- 悬浮球榜单Tab样式 --- */
+.leaderboard-tab {
+    color: #94a3b8; /* gray-400 */
+    background-color: transparent;
 }
-#vortex-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-} */
-/* #new-start-btn {
-    position: relative;
-    z-index: 10;
-    box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.3);
-    animation: pulse-button 2.5s infinite;
-} */
-/* @keyframes pulse-button {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.3);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 0 25px rgba(251, 191, 36, 0.7), 0 0 50px rgba(251, 191, 36, 0.5);
-    }
-} */
+.leaderboard-tab.active {
+    color: #ffffff;
+    background-color: #3b82f6; /* blue-600 */
+}
+.leaderboard-content {
+    display: none;
+}
+.leaderboard-content.active {
+    display: block;
+}

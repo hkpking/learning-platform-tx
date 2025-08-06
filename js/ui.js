@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * [v1.3] Adds elements for the new landing page leaderboards.
+ * [v1.4] Adds elements for the new floating leaderboard tabs.
  */
 import { AppState } from './state.js';
 
@@ -12,8 +12,15 @@ export const UI = {
         factionModal: { container: document.getElementById('faction-selection-modal') },
         restartModal: { container: document.getElementById('restart-confirm-modal'), confirmBtn: document.getElementById('confirm-restart-btn'), cancelBtn: document.getElementById('cancel-restart-btn') },
         deleteConfirmModal: { container: document.getElementById('delete-confirm-modal'), message: document.getElementById('delete-confirm-message'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
+        
+        // Leaderboard elements
         leaderboardContainer: document.getElementById('leaderboard-container'),
         leaderboardList: document.getElementById('leaderboard-list'),
+        leaderboardFactionList: document.getElementById('leaderboard-faction-list'),
+        leaderboardPersonalTab: document.getElementById('leaderboard-personal-tab'),
+        leaderboardFactionTab: document.getElementById('leaderboard-faction-tab'),
+        personalBoardContent: document.getElementById('personal-board-content'),
+        factionBoardContent: document.getElementById('faction-board-content'),
 
         // Top-level view containers
         landingView: document.getElementById('landing-view'),
@@ -29,8 +36,6 @@ export const UI = {
             startBtn: document.getElementById('new-start-btn'), 
             subtitle: document.getElementById('subtitle'), 
             scrollIndicator: document.getElementById('scroll-indicator'),
-            personalTab: document.getElementById('landing-personal-tab'),
-            factionTab: document.getElementById('landing-faction-tab'),
             personalBoard: document.getElementById('landing-personal-board'),
             factionBoard: document.getElementById('landing-faction-board')
         },
