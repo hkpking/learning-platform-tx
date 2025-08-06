@@ -72,7 +72,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
 
-#hub-background-container {
+/* #hub-background-container {
     background-image: url('../assets/images/hub-background.jpg');
     background-size: cover;
     background-position: center center;
@@ -81,7 +81,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
     padding-bottom: 2rem;
     border-radius: 0.75rem;
     position: relative;
-}
+} */
 
 /* --- Hub 美化样式 --- */
 .hub-card {
@@ -198,7 +198,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .faction-name.faction-name-gray { color: #d1d5db; }
 
 /* --- Advanced Vortex Animation Styles --- */
-.vortex-container {
+/* .vortex-container {
     margin-top: 2rem;
     position: relative;
     width: 350px;
@@ -215,14 +215,14 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
     left: 0;
     width: 100%;
     height: 100%;
-}
-#new-start-btn {
+} */
+/* #new-start-btn {
     position: relative;
     z-index: 10;
     box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.3);
     animation: pulse-button 2.5s infinite;
-}
-@keyframes pulse-button {
+} */
+/* @keyframes pulse-button {
     0%, 100% {
         transform: scale(1);
         box-shadow: 0 0 15px rgba(251, 191, 36, 0.5), 0 0 30px rgba(251, 191, 36, 0.3);
@@ -231,4 +231,4 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
         transform: scale(1.05);
         box-shadow: 0 0 25px rgba(251, 191, 36, 0.7), 0 0 50px rgba(251, 191, 36, 0.5);
     }
-}
+} */
