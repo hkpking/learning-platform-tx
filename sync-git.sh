@@ -1,76 +1,99 @@
 #!/bin/bash
 
 # =================================================================
-# 优化后的 Git 自动同步脚本
+#  Git 智能同步脚本 (v2.0)
 #
-# 功能:
-# 1. 自动暂存所有更改。
-# 2. 检查是否有实际更改，如有则提交。
-# 3. 检查是否有本地未推送的提交。
-# 4. 将所有需要同步的内容推送到远程仓库。
-#
-# 使用方法:
-#   1. ./sync-git.sh "你的提交信息" (推荐)
-#   2. ./sync-git.sh (使用默认的提交信息)
+#  功能:
+#  1. 自动暂存所有更改。
+#  2. 检查并提交更改。
+#  3. 交互式选择要推送的环境（测试或正式）。
+#  4. 安全地将代码推送到指定环境。
 # =================================================================
 
 # --- 配置 ---
-# 设置颜色变量，用于美化输出
+# 颜色定义
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+CYAN='\033[0;36m'
+NC='\033[0m'
+
+# 远程仓库别名
+TEST_REMOTE="origin"
+PROD_REMOTE="prod"
 
 # --- 脚本开始 ---
-echo -e "${YELLOW}🚀 开始执行 Git 同步...${NC}"
+echo -e "${YELLOW}🚀 开始执行 Git 智能同步...${NC}"
+
+# 检查正式环境远程仓库是否存在
+if ! git remote get-url "$PROD_REMOTE" > /dev/null 2>&1; then
+    echo -e "${RED}❌ 错误：找不到名为 '$PROD_REMOTE' 的远程仓库。${NC}"
+    echo -e "${CYAN}💡 请先运行 'git remote add prod <您的正式仓库URL>' 添加它。${NC}"
+    exit 1
+fi
 
 # 1. 暂存所有本地更改
 git add .
-echo -e "${GREEN}✔ 步骤 1/4: 已尝试将所有更改添加到暂存区 (git add .)。${NC}"
+echo -e "${GREEN}✔ 步骤 1/4: 已暂存所有本地更改。${NC}"
 
-# 2. 检查是否有文件被暂存以待提交
-# 使用 `git diff --staged --quiet` 命令，如果暂存区为空，它会返回 0
+# 2. 检查并提交更改
 if git diff --staged --quiet; then
   echo -e "${GREEN}ℹ️  没有新的文件更改需要提交。${NC}"
 else
-  echo -e "${YELLOW}✨ 检测到新的文件更改，正在准备提交...${NC}"
-  # 2.1 提交更改
-  # 检查用户是否提供了提交信息作为参数
-  if [ -n "$1" ]; then
-    # 如果提供了参数，则使用用户的提交信息
-    COMMIT_MESSAGE="$1"
-  else
-    # 如果未提供，则使用带有当前时间的默认信息
-    COMMIT_MESSAGE="chore: 自动同步于 $(date +'%Y-%m-%d %H:%M:%S')"
-    echo -e "${YELLOW}⚠️  未提供提交信息，将使用默认信息: '${COMMIT_MESSAGE}'${NC}"
+  echo -e "${YELLOW}✨ 检测到新更改，准备提交...${NC}"
+  COMMIT_MESSAGE=${1:-"chore: 自动同步于 $(date +'%Y-%m-%d %H:%M:%S')"}
+  if [ -z "$1" ]; then
+    echo -e "${YELLOW}⚠️  未提供提交信息，使用默认信息: '${COMMIT_MESSAGE}'${NC}"
   fi
-
-  # 执行提交命令
   git commit -m "$COMMIT_MESSAGE"
-
-  # 检查提交是否成功
   if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ 提交失败！请检查是否存在 Git 冲突或其他错误。${NC}"
+    echo -e "${RED}❌ 提交失败！请检查错误。${NC}"
     exit 1
   fi
-  echo -e "${GREEN}✔ 步骤 2/4: 已成功提交更改。${NC}"
+  echo -e "${GREEN}✔ 步骤 2/4: 更改已成功提交。${NC}"
 fi
 
-# 3. 检查本地是否领先于远程（即是否有未推送的提交）
-# 使用 `git status -sb` 并通过 grep 查找 "ahead" 关键词
-if [[ $(git status -sb) == *"ahead"* ]]; then
-  echo -e "${YELLOW}📡 步骤 3/4: 检测到本地有领先于远程的提交，正在推送到远程仓库...${NC}"
-  # 4. 推送到远程仓库
-  git push
+# 3. 交互式选择推送环境
+echo -e "${CYAN}请选择要推送到的环境:${NC}"
+echo "  1) 测试环境 ($TEST_REMOTE)"
+echo "  2) 正式环境 ($PROD_REMOTE)"
+read -p "请输入选项 (1 或 2): " choice
 
-  # 检查推送是否成功
+REMOTE_NAME=""
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD) # 获取当前分支名
+
+case $choice in
+    1)
+        REMOTE_NAME="$TEST_REMOTE"
+        echo -e "${YELLOW}📡 准备推送到 [测试环境]...${NC}"
+        ;;
+    2)
+        REMOTE_NAME="$PROD_REMOTE"
+        # 增加一个额外的确认步骤，防止误操作
+        read -p "🚨 您确定要推送到 [正式环境] 吗？(y/n): " confirm
+        if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            echo -e "${YELLOW}操作已取消。${NC}"
+            exit 0
+        fi
+        echo -e "${YELLOW}📡 准备推送到 [正式环境]...${NC}"
+        ;;
+    *)
+        echo -e "${RED}❌ 无效的选项。脚本已中止。${NC}"
+        exit 1
+        ;;
+esac
+
+# 4. 检查是否有需要推送的提交并执行推送
+if [[ $(git status -sb | grep "ahead") ]]; then
+  echo -e "${CYAN}✔ 步骤 3/4: 检测到本地提交领先于远程，开始推送...${NC}"
+  git push "$REMOTE_NAME" "$BRANCH_NAME"
+
   if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✔ 步骤 4/4: 推送成功！${NC}"
-    echo -e "${GREEN}🎉 同步完成！您的代码已更新到远程仓库。${NC}"
+    echo -e "${GREEN}✔ 步骤 4/4: 成功推送到 ${REMOTE_NAME} 的 ${BRANCH_NAME} 分支！${NC}"
+    echo -e "${GREEN}🎉 同步完成！${NC}"
   else
-    echo -e "${RED}❌ 推送失败！请检查您的网络连接、远程仓库配置或权限。${NC}"
-    # 提示用户可能需要先拉取更新
-    echo -e "${YELLOW}💡 提示: 推送失败可能是因为远程仓库有您本地没有的更新。请尝试先执行 'git pull'。${NC}"
+    echo -e "${RED}❌ 推送失败！${NC}"
+    echo -e "${CYAN}💡 提示: 远程仓库可能有您本地没有的更新，请尝试先执行 'git pull ${REMOTE_NAME} ${BRANCH_NAME}'。${NC}"
     exit 1
   fi
 else
