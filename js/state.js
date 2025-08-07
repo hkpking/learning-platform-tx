@@ -1,7 +1,7 @@
 /**
  * @file state.js
  * @description Manages the global state of the application.
- * [v1.2] Adds state for the faction leaderboard.
+ * [v2.3.1] Added state for active challenges.
  */
 export const AppState = {
     user: null, 
@@ -12,6 +12,7 @@ export const AppState = {
     },
     leaderboard: [],
     factionLeaderboard: [],
+    activeChallenges: [], // [NEW] Added state for active challenges
     userProgress: { 
         completedBlocks: new Set(),
         awardedPointsBlocks: new Set()
@@ -29,6 +30,7 @@ export const AppState = {
     admin: {
         view: 'categories', 
         categories: [],
+        challenges: [], // [NEW] Added state for admin challenges list
         selectedCategory: null,
         selectedChapter: null,
         selectedSection: null,

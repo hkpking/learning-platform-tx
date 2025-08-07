@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v1.8] Fixes profile creation conflict and getUserProgress error.
+ * [v2.3.2] Adds API call for finishing challenges.
  */
 const SUPABASE_URL = 'https://mfxlcdsrnzxjslrfaawz.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGxjZHNybnp4anNscmZhYXd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQyODMsImV4cCI6MjA2NzI2MDI4M30.wTuqqQkOP2_ZwfUU_xM0-X9YjkM39-kewjN41Pxa_wA';
@@ -42,17 +42,48 @@ export const ApiService = {
         }
         return data;
     },
+    
+    async fetchActiveChallenges() {
+        const { data, error } = await this.db
+            .from('challenges')
+            .select('*')
+            .eq('is_active', true);
+        if (error) throw error;
+        return data;
+    },
+
+    async fetchChallengesForAdmin() {
+        const { data, error } = await this.db
+            .from('challenges')
+            .select('*, target_category:categories(title)')
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data.map(c => ({...c, target_category_title: c.target_category?.title}));
+    },
+    async upsertChallenge(d) {
+        const { error } = await this.db.from('challenges').upsert(d, { onConflict: 'id' });
+        if (error) throw error;
+    },
+    async deleteChallenge(id) {
+        const { error } = await this.db.from('challenges').delete().eq('id', id);
+        if (error) throw error;
+    },
+
+    async finishChallenge(challengeId) {
+        const { error } = await this.db.rpc('finish_challenge', { challenge_id_param: challengeId });
+        if (error) {
+            console.error('Error finishing challenge:', error);
+            throw new Error(`挑战结算失败: ${error.message}`);
+        }
+    },
 
     async getProfile(userId) {
         let { data, error } = await this.db.from('profiles').select('role, faction').eq('id', userId).single();
-        // 如果查询出错，且错误原因是“没有找到记录”
         if (error && error.code === 'PGRST116') {
-            // 则为该用户创建一个新的档案，这是一种健壮的“get or create”模式
             const { data: newProfile, error: insertError } = await this.db.from('profiles').insert([{ id: userId, role: 'user' }]).select('role, faction').single();
             if (insertError) throw new Error('无法为新用户创建档案。');
             return newProfile;
         } else if (error) {
-            // 如果是其他未知错误，则抛出
             throw new Error('获取用户档案时出错。');
         }
         return data;
@@ -66,17 +97,13 @@ export const ApiService = {
     },
 
     async getUserProgress(userId) {
-        // [FIX] 修复 406 Not Acceptable 错误
-        // 不使用 .single()，而是查询一个列表，这样即使用户没有进度（返回空列表），也不会报错
         const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId);
         
         if (error) {
-            // 如果有其他非预期的错误，则抛出
             console.error('Error fetching user progress:', error);
             throw new Error('获取用户进度失败');
         }
 
-        // 如果查询成功但没有数据（新用户），则返回一个默认的空进度对象
         const progress = data && data.length > 0 ? data[0] : null;
 
         return {
@@ -107,10 +134,6 @@ export const ApiService = {
     },
 
     async signUp(email, password) {
-        // [FIX] 修复 409 Conflict 错误
-        // 移除这里的 profile 和 score 创建逻辑。
-        // getProfile 函数已有“get or create”逻辑，而 upsert_score 函数能自动处理新用户的分数记录。
-        // 这使得 signUp 函数只专注于“注册”这一核心职责。
         const { data, error } = await this.db.auth.signUp({ email, password });
         if (error) throw error;
         return data;

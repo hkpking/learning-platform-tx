@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v2.1] Updated with new department-based factions.
+ * [v2.3.1] Updated to handle admin challenge view.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -68,8 +68,23 @@ const App = {
                 this.handleFactionSelection(button.dataset.faction);
             }
         });
+
+        // [NEW] Admin View Navigation
+        UI.elements.admin.adminNav.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-admin-view]');
+            if (button) {
+                const view = button.dataset.adminView;
+                UI.elements.admin.adminNav.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                if (view === 'challenges') {
+                    AdminView.showChallengesList();
+                } else {
+                    AdminView.showCategoryList(); // Default to category list
+                }
+            }
+        });
     },
-    initLandingPage() {
+    async initLandingPage() {
         const subtitle = UI.elements.landing.subtitle;
         const scrollIndicator = UI.elements.landing.scrollIndicator;
         const script = [{ t: "流程真经，曾护佑大唐盛世千年……", d: 5000 }, { t: "然大道蒙尘，秩序失落，妖魔横行。", d: 5000 }, { t: "为重归繁荣，大唐董事遍发《无字真书》，寻觅天命之人。", d: 6000 }, { t: "于机缘巧合，你，得到了它……", d: 5000 }, { t: "当你翻开《流程密码》的瞬间，亦被其选中。", d: 6000 }, { t: "欢迎你，天命人。你的旅程，由此开始。", d: 5000 }];
@@ -94,6 +109,14 @@ const App = {
             });
         }, { threshold: 0.2 });
         animatedElements.forEach(el => observer.observe(el));
+        
+        try {
+            const challenges = await ApiService.fetchActiveChallenges();
+            AppState.activeChallenges = challenges;
+        } catch (error) {
+            console.error('获取活跃挑战失败:', error);
+        }
+
         this.updateLandingPageLeaderboards();
     },
     
@@ -101,6 +124,26 @@ const App = {
         const { personalBoard, factionBoard } = UI.elements.landing;
         UI.renderLoading(personalBoard);
         UI.renderLoading(factionBoard);
+        
+        const challengeContainer = document.getElementById('active-challenge-container');
+        const challengeSection = document.getElementById('challenge-section');
+        challengeContainer.innerHTML = '';
+        if (AppState.activeChallenges && AppState.activeChallenges.length > 0) {
+            challengeSection.classList.remove('hidden');
+            AppState.activeChallenges.forEach(challenge => {
+                const challengeCard = document.createElement('div');
+                challengeCard.className = 'bg-slate-800/50 p-6 rounded-lg text-center';
+                challengeCard.innerHTML = `
+                    <h3 class="text-2xl font-bold text-amber-300 mb-2">${challenge.title}</h3>
+                    <p class="text-gray-400 mb-4">${challenge.description}</p>
+                    <p class="text-sm text-gray-500">挑战时间: ${new Date(challenge.start_date).toLocaleDateString()} - ${new Date(challenge.end_date).toLocaleDateString()}</p>
+                `;
+                challengeContainer.appendChild(challengeCard);
+            });
+        } else {
+            challengeSection.classList.add('hidden');
+        }
+
         try {
             const [personalData, factionData] = await Promise.all([
                 ApiService.fetchLeaderboard(),

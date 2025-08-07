@@ -1,4 +1,4 @@
-/* --- 全局与基础样式 --- */
+/* --- Global and Base Styles --- */
 body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-height: 100vh; }
 #app-container { position: relative; }
 #app-container > section.view { display: none; }
@@ -20,7 +20,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 #leaderboard-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 50; transition: opacity 0.3s, visibility 0.3s; }
 #leaderboard-icon { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: linear-gradient(to right, #f97316, #f59e0b); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; box-shadow: 0 10px 20px rgba(0,0,0,0.2); transition: transform 0.3s; }
 #leaderboard-icon:hover { transform: scale(1.1); }
-#leaderboard-panel { position: absolute; bottom: 4.5rem; right: 0; width: 300px; opacity: 0; visibility: hidden; transform: translateY(20px); transition: all 0.3s ease-out; }
+#leaderboard-panel { position: absolute; bottom: 4.5rem; right: 0; width: 300px; max-height: 400px; overflow-y: auto; opacity: 0; visibility: hidden; transform: translateY(20px); transition: all 0.3s ease-out; }
 #leaderboard-container:hover #leaderboard-panel { opacity: 1; visibility: visible; transform: translateY(0); }
 .rank-1 .rank-badge { background-color: #ffd700; color: #422c00; } .rank-2 .rank-badge { background-color: #c0c0c0; color: #363636; } .rank-3 .rank-badge { background-color: #cd7f32; color: #4a2a0c; }
 .section-group-title { padding: 0.75rem 0.5rem; font-weight: 700; color: #94a3b8; border-top: 1px solid #334155; margin-top: 0.5rem; }
@@ -39,6 +39,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .admin-label { font-weight: 600; color: #475569; }
 .admin-input, .admin-textarea, .admin-select { background-color: #fff; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0.75rem 1rem; transition: all 0.2s ease-in-out; width: 100%; }
 .admin-input:focus, .admin-textarea:focus, .admin-select:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4); }
+.admin-checkbox { width: 1.25rem; height: 1.25rem; border: 1px solid #cbd5e1; border-radius: 0.25rem; }
 #admin-modal-backdrop { position: fixed; inset: 0; background-color: rgba(0, 0, 0, 0.6); display: none; align-items: center; justify-content: center; z-index: 40; }
 #admin-modal-backdrop.active { display: flex; }
 .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 { color: #bae6fd; font-weight: 700; margin-top: 1.25em; margin-bottom: 0.5em; }
@@ -72,7 +73,7 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
 
-/* --- Hub 美化样式 --- */
+/* --- Hub Styles --- */
 .hub-card {
     background: rgba(10, 10, 10, 0.6);
     backdrop-filter: blur(10px);
@@ -92,8 +93,6 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
     border-color: rgba(252, 211, 77, 0.6);
     transform: translateY(-4px);
 }
-
-/* 修炼星图 */
 .path-node { position: relative; text-align: center; }
 .path-node-icon {
     width: 4rem; height: 4rem; margin-left: auto; margin-right: auto; margin-bottom: 0.5rem;
@@ -122,8 +121,6 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .path-line { height: 2px; background: linear-gradient(to right, transparent, #b45309, transparent); flex-grow: 1; opacity: 0.3; }
 .path-line-complete { height: 2px; background: linear-gradient(to right, #f59e0b, #b45309, transparent); flex-grow: 1; opacity: 0.8; }
 @media (max-width: 768px) { .path-line, .path-line-complete { display: none; } }
-
-/* 部门榜 */
 .faction-leaderboard-item {
     padding: 1rem;
     border-radius: 6px;
@@ -136,8 +133,6 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .faction-score { text-align: right; }
 .faction-score .avg-score { font-size: 1.5rem; font-weight: 700; color: #fcd34d; }
 .faction-score .avg-label { font-size: 0.875rem; color: #94a3b8; }
-
-/* 个人榜 */
 .personal-leaderboard-item {
     display: grid;
     grid-template-columns: 2rem 1fr auto;
@@ -186,18 +181,22 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .faction-name.faction-name-purple { color: #c4b5fd; }
 .faction-name.faction-name-gray { color: #d1d5db; }
 
-/* --- 悬浮球榜单Tab样式 --- */
-.leaderboard-tab {
-    color: #94a3b8; /* gray-400 */
-    background-color: transparent;
+/* --- Admin View Specifics --- */
+.admin-view-bg {
+    background-color: #f1f5f9;
+    color: #1e293b;
+    display: flex; /* Add flex display here */
+    flex-direction: row;
+    height: 100vh;
 }
-.leaderboard-tab.active {
-    color: #ffffff;
-    background-color: #3b82f6; /* blue-600 */
+.admin-view-bg .flex-1 {
+    display: flex;
+    flex-direction: column;
 }
-.leaderboard-content {
-    display: none;
+.admin-view-bg nav button {
+    transition: all 0.2s ease;
 }
-.leaderboard-content.active {
-    display: block;
+.admin-view-bg nav button.active {
+    background-color: #cbd5e1;
 }
+

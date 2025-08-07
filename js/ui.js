@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * [v1.4] Adds elements for the new floating leaderboard tabs.
+ * [v2.3.2] Adds element for challenge management buttons.
  */
 import { AppState } from './state.js';
 
@@ -12,15 +12,8 @@ export const UI = {
         factionModal: { container: document.getElementById('faction-selection-modal') },
         restartModal: { container: document.getElementById('restart-confirm-modal'), confirmBtn: document.getElementById('confirm-restart-btn'), cancelBtn: document.getElementById('cancel-restart-btn') },
         deleteConfirmModal: { container: document.getElementById('delete-confirm-modal'), message: document.getElementById('delete-confirm-message'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
-        
-        // Leaderboard elements
         leaderboardContainer: document.getElementById('leaderboard-container'),
         leaderboardList: document.getElementById('leaderboard-list'),
-        leaderboardFactionList: document.getElementById('leaderboard-faction-list'),
-        leaderboardPersonalTab: document.getElementById('leaderboard-personal-tab'),
-        leaderboardFactionTab: document.getElementById('leaderboard-faction-tab'),
-        personalBoardContent: document.getElementById('personal-board-content'),
-        factionBoardContent: document.getElementById('faction-board-content'),
 
         // Top-level view containers
         landingView: document.getElementById('landing-view'),
@@ -36,6 +29,8 @@ export const UI = {
             startBtn: document.getElementById('new-start-btn'), 
             subtitle: document.getElementById('subtitle'), 
             scrollIndicator: document.getElementById('scroll-indicator'),
+            personalTab: document.getElementById('landing-personal-tab'),
+            factionTab: document.getElementById('landing-faction-tab'),
             personalBoard: document.getElementById('landing-personal-board'),
             factionBoard: document.getElementById('landing-faction-board')
         },
@@ -47,7 +42,44 @@ export const UI = {
         mainApp: { header: document.getElementById('main-header'), adminViewBtn: document.getElementById('admin-view-btn'), userGreeting: document.getElementById('user-greeting'), logoutBtn: document.getElementById('logout-btn'), restartBtn: document.getElementById('restart-btn'), categoryView: document.getElementById('category-selection-view'), categoryGrid: document.getElementById('categories-grid'), chapterView: document.getElementById('chapter-selection-view'), chapterTitle: document.getElementById('chapter-view-title'), chapterDesc: document.getElementById('chapter-view-desc'), chapterGrid: document.getElementById('chapters-grid'), backToCategoriesBtn: document.getElementById('back-to-categories-btn'), detailView: document.getElementById('chapter-detail-view'), sidebarHeader: document.getElementById('sidebar-header'), sidebarNav: document.getElementById('sidebar-nav-list'), contentArea: document.getElementById('content-area'), backToChaptersBtn: document.getElementById('back-to-chapters-btn'), },
 
         // Admin Panel elements
-        admin: { container: document.getElementById('admin-management-view'), breadcrumb: document.getElementById('admin-breadcrumb'), backToLearningBtn: document.getElementById('back-to-learning-btn'), categoryListView: document.getElementById('admin-category-list-view'), categoriesTableContainer: document.getElementById('admin-categories-table-container'), chapterListView: document.getElementById('admin-chapter-list-view'), chapterListTitle: document.getElementById('admin-chapter-list-title'), chaptersTableContainer: document.getElementById('admin-chapters-table-container'), sectionListView: document.getElementById('admin-section-list-view'), sectionListTitle: document.getElementById('admin-section-list-title'), sectionsTableContainer: document.getElementById('admin-sections-table-container'), blockEditorView: document.getElementById('admin-block-editor-view'), editorSectionTitle: document.getElementById('admin-editor-section-title'), blocksList: document.getElementById('admin-blocks-list'), addCategoryBtn: document.getElementById('admin-add-category-btn'), addChapterBtn: document.getElementById('admin-add-chapter-btn'), addSectionBtn: document.getElementById('admin-add-section-btn'), addNewBlockBtn: document.getElementById('admin-add-new-block-btn'), modal: { backdrop: document.getElementById('admin-modal-backdrop'), container: document.getElementById('form-modal'), form: document.getElementById('modal-form'), title: document.getElementById('modal-title'), saveBtn: document.getElementById('save-modal-btn'), cancelBtn: document.getElementById('cancel-modal-btn'), } },
+        admin: {
+            container: document.getElementById('admin-management-view'),
+            breadcrumb: document.getElementById('admin-breadcrumb'),
+            backToLearningBtn: document.getElementById('back-to-learning-btn'),
+            adminNav: document.querySelector('.admin-view-bg nav'),
+            
+            // Course Content Management elements
+            categoryListView: document.getElementById('admin-category-list-view'),
+            categoriesTableContainer: document.getElementById('admin-categories-table-container'),
+            chapterListView: document.getElementById('admin-chapter-list-view'),
+            chapterListTitle: document.getElementById('admin-chapter-list-title'),
+            chaptersTableContainer: document.getElementById('admin-chapters-table-container'),
+            sectionListView: document.getElementById('admin-section-list-view'),
+            sectionListTitle: document.getElementById('admin-section-list-title'),
+            sectionsTableContainer: document.getElementById('admin-sections-table-container'),
+            blockEditorView: document.getElementById('admin-block-editor-view'),
+            editorSectionTitle: document.getElementById('admin-editor-section-title'),
+            blocksList: document.getElementById('admin-blocks-list'),
+            addCategoryBtn: document.getElementById('admin-add-category-btn'),
+            addChapterBtn: document.getElementById('admin-add-chapter-btn'),
+            addSectionBtn: document.getElementById('admin-add-section-btn'),
+            addNewBlockBtn: document.getElementById('admin-add-new-block-btn'),
+
+            // Challenge Management elements
+            challengesListView: document.getElementById('admin-challenges-list-view'),
+            challengesTableContainer: document.getElementById('admin-challenges-table-container'),
+            addChallengeBtn: document.getElementById('admin-add-challenge-btn'),
+            endChallengeBtn: document.getElementById('end-challenge-btn'), // [NEW] Add new button reference
+
+            modal: {
+                backdrop: document.getElementById('admin-modal-backdrop'),
+                container: document.getElementById('form-modal'),
+                form: document.getElementById('modal-form'),
+                title: document.getElementById('modal-title'),
+                saveBtn: document.getElementById('save-modal-btn'),
+                cancelBtn: document.getElementById('cancel-modal-btn'),
+            }
+        },
     },
     showNotification(message, type = 'success') {
         this.elements.notification.textContent = message;
