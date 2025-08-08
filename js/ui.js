@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * [v2.3.2] Adds element for challenge management buttons.
+ * [v2.4.3] Added full name input elements for the auth form.
  */
 import { AppState } from './state.js';
 
@@ -43,7 +43,19 @@ export const UI = {
         },
 
         // Auth View elements
-        auth: { backToLandingBtn: document.getElementById('back-to-landing-btn'), form: document.getElementById('auth-form'), title: document.getElementById('form-title'), submitBtn: document.getElementById('submit-btn'), prompt: document.getElementById('prompt-text'), switchBtn: document.getElementById('switch-mode-btn'), authInput: document.getElementById('auth-input'), passwordInput: document.getElementById('password-input') },
+        auth: {
+            backToLandingBtn: document.getElementById('back-to-landing-btn'),
+            form: document.getElementById('auth-form'),
+            title: document.getElementById('form-title'),
+            submitBtn: document.getElementById('submit-btn'),
+            prompt: document.getElementById('prompt-text'),
+            switchBtn: document.getElementById('switch-mode-btn'),
+            authInput: document.getElementById('auth-input'),
+            passwordInput: document.getElementById('password-input'),
+            // **THE FIX IS HERE**
+            fullNameInputContainer: document.getElementById('full-name-input-container'),
+            fullNameInput: document.getElementById('full-name-input')
+        },
 
         // Main App View elements
         mainApp: { header: document.getElementById('main-header'), profileViewBtn: document.getElementById('profile-view-btn'), adminViewBtn: document.getElementById('admin-view-btn'), userGreeting: document.getElementById('user-greeting'), logoutBtn: document.getElementById('logout-btn'), restartBtn: document.getElementById('restart-btn'), categoryView: document.getElementById('category-selection-view'), categoryGrid: document.getElementById('categories-grid'), chapterView: document.getElementById('chapter-selection-view'), chapterTitle: document.getElementById('chapter-view-title'), chapterDesc: document.getElementById('chapter-view-desc'), chapterGrid: document.getElementById('chapters-grid'), backToCategoriesBtn: document.getElementById('back-to-categories-btn'), detailView: document.getElementById('chapter-detail-view'), sidebarHeader: document.getElementById('sidebar-header'), sidebarNav: document.getElementById('sidebar-nav-list'), contentArea: document.getElementById('content-area'), backToChaptersBtn: document.getElementById('back-to-chapters-btn'), },
@@ -55,7 +67,6 @@ export const UI = {
             backToLearningBtn: document.getElementById('back-to-learning-btn'),
             adminNav: document.querySelector('.admin-view-bg nav'),
             
-            // Course Content Management elements
             categoryListView: document.getElementById('admin-category-list-view'),
             categoriesTableContainer: document.getElementById('admin-categories-table-container'),
             chapterListView: document.getElementById('admin-chapter-list-view'),
@@ -72,11 +83,10 @@ export const UI = {
             addSectionBtn: document.getElementById('admin-add-section-btn'),
             addNewBlockBtn: document.getElementById('admin-add-new-block-btn'),
 
-            // Challenge Management elements
             challengesListView: document.getElementById('admin-challenges-list-view'),
             challengesTableContainer: document.getElementById('admin-challenges-table-container'),
             addChallengeBtn: document.getElementById('admin-add-challenge-btn'),
-            endChallengeBtn: document.getElementById('end-challenge-btn'), // [NEW] Add new button reference
+            endChallengeBtn: document.getElementById('end-challenge-btn'),
 
             modal: {
                 backdrop: document.getElementById('admin-modal-backdrop'),
@@ -98,54 +108,13 @@ export const UI = {
         let skeletonHTML = '';
         switch (type) {
             case 'leaderboard':
-                skeletonHTML = `
-                    <div class="space-y-3 p-2 animate-pulse">
-                        ${[...Array(5)].map(() => `
-                            <div class="flex items-center space-x-3">
-                                <div class="h-10 w-10 bg-slate-700/50 rounded-full"></div>
-                                <div class="flex-1 space-y-2 py-1">
-                                    <div class="h-4 bg-slate-700/50 rounded w-3/4"></div>
-                                    <div class="h-3 bg-slate-700/50 rounded w-1/2"></div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                skeletonHTML = `<div class="space-y-3 p-2 animate-pulse">${[...Array(5)].map(() => `<div class="flex items-center space-x-3"><div class="h-10 w-10 bg-slate-700/50 rounded-full"></div><div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-700/50 rounded w-3/4"></div><div class="h-3 bg-slate-700/50 rounded w-1/2"></div></div></div>`).join('')}</div>`;
                 break;
             case 'faction-leaderboard':
-                skeletonHTML = `
-                    <div class="space-y-4 animate-pulse">
-                        ${[...Array(3)].map(() => `
-                            <div class="p-4 bg-slate-800/50 rounded-lg">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <div class="h-5 w-32 bg-slate-700/50 rounded mb-3"></div>
-                                        <div class="h-3 w-40 bg-slate-700/50 rounded"></div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="h-8 w-12 bg-slate-700/50 rounded mb-2"></div>
-                                        <div class="h-3 w-8 bg-slate-700/50 rounded"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
+                skeletonHTML = `<div class="space-y-4 animate-pulse">${[...Array(3)].map(() => `<div class="p-4 bg-slate-800/50 rounded-lg"><div class="flex justify-between items-start"><div><div class="h-5 w-32 bg-slate-700/50 rounded mb-3"></div><div class="h-3 w-40 bg-slate-700/50 rounded"></div></div><div class="text-right"><div class="h-8 w-12 bg-slate-700/50 rounded mb-2"></div><div class="h-3 w-8 bg-slate-700/50 rounded"></div></div></div></div>`).join('')}</div>`;
                 break;
             case 'content':
-                skeletonHTML = `
-                    <div class="animate-pulse space-y-8 p-4">
-                        <div class="h-8 bg-slate-700/50 rounded w-3/4"></div>
-                        <div class="space-y-4">
-                            <div class="h-4 bg-slate-700/50 rounded"></div>
-                            <div class="h-4 bg-slate-700/50 rounded w-5/6"></div>
-                            <div class="h-4 bg-slate-700/50 rounded w-1/2"></div>
-                        </div>
-                        <div class="h-40 bg-slate-800/50 rounded-lg"></div>
-                        <div class="h-4 bg-slate-700/50 rounded w-3/4"></div>
-                        <div class="h-4 bg-slate-700/50 rounded w-5/6"></div>
-                    </div>
-                `;
+                skeletonHTML = `<div class="animate-pulse space-y-8 p-4"><div class="h-8 bg-slate-700/50 rounded w-3/4"></div><div class="space-y-4"><div class="h-4 bg-slate-700/50 rounded"></div><div class="h-4 bg-slate-700/50 rounded w-5/6"></div><div class="h-4 bg-slate-700/50 rounded w-1/2"></div></div><div class="h-40 bg-slate-800/50 rounded-lg"></div><div class="h-4 bg-slate-700/50 rounded w-3/4"></div><div class="h-4 bg-slate-700/50 rounded w-5/6"></div></div>`;
                 break;
             default:
                 skeletonHTML = `<div class="flex justify-center items-center p-10"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div></div>`;
