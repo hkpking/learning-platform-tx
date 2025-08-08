@@ -7,8 +7,8 @@ export const AuthView = {
         if (e) e.preventDefault();
         AppState.authMode = AppState.authMode === 'login' ? 'register' : 'login';
         const { form, title, submitBtn, prompt, switchBtn } = UI.elements.auth;
-        const nameInputContainer = document.getElementById('full-name-input-container');
-        const nameInput = document.getElementById('full-name-input');
+        // Get the name input elements from the UI object
+        const { fullNameInputContainer, fullNameInput } = UI.elements.auth;
 
         form.reset();
         if (AppState.authMode === 'login') {
@@ -16,21 +16,22 @@ export const AuthView = {
             submitBtn.textContent = '登录';
             prompt.textContent = '还没有账户？';
             switchBtn.textContent = '立即注册';
-            nameInputContainer.classList.add('hidden');
-            nameInput.required = false;
+            // Hide name input for login
+            fullNameInputContainer.classList.add('hidden');
+            fullNameInput.required = false;
         } else {
             title.textContent = '创建新账户';
             submitBtn.textContent = '注册';
             prompt.textContent = '已有账户？';
             switchBtn.textContent = '立即登录';
-            nameInputContainer.classList.remove('hidden');
-            nameInput.required = true;
+            // Show name input for registration and make it required
+            fullNameInputContainer.classList.remove('hidden');
+            fullNameInput.required = true;
         }
     },
     async handleAuthSubmit(e) {
         e.preventDefault();
-        const { authInput, passwordInput, submitBtn } = UI.elements.auth;
-        const fullNameInput = document.getElementById('full-name-input');
+        const { authInput, passwordInput, fullNameInput, submitBtn } = UI.elements.auth;
 
         const email = authInput.value.trim();
         const password = passwordInput.value.trim();
@@ -40,6 +41,7 @@ export const AuthView = {
             UI.showNotification('邮箱和密码不能为空！', 'error');
             return;
         }
+        // Validate full name only in register mode
         if (AppState.authMode === 'register' && !fullName) {
             UI.showNotification('姓名不能为空！', 'error');
             return;
@@ -53,6 +55,7 @@ export const AuthView = {
                 await ApiService.signIn(email, password);
                 // The onAuthStateChange listener in app.js will handle the rest
             } else {
+                // Pass the full name to the signUp function
                 await ApiService.signUp(email, password, fullName);
                 UI.showNotification('注册成功！请使用您的邮箱登录。', 'success');
                 this.switchAuthMode(); // Switch back to login form
