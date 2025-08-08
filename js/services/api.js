@@ -46,6 +46,20 @@ export const ApiService = {
         return data;
     },
 
+    async getScoreInfo(userId) {
+        const { data, error } = await this.db
+            .from('scores')
+            .select('username, points')
+            .eq('user_id', userId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') { // Ignore error if no row is found
+            console.error("Error fetching score info:", error);
+            throw new Error('获取用户分数信息时出错。');
+        }
+        return data;
+    },
+
     async fetchFactionLeaderboard() {
         const { data, error } = await this.db.rpc('get_faction_leaderboard');
         if (error) {
@@ -92,7 +106,7 @@ export const ApiService = {
     async getProfile(userId) {
         const { data, error } = await this.db
             .from('profiles')
-            .select('role, faction, full_name')
+            .select('role, faction')
             .eq('id', userId)
             .single();
 
@@ -104,7 +118,7 @@ export const ApiService = {
     },
 
     async updateProfileFaction(userId, faction) {
-        const { data, error } = await this.db.from('profiles').update({ faction: faction, updated_at: new Date() }).eq('id', userId).select('role, faction, full_name').single();
+        const { data, error } = await this.db.from('profiles').update({ faction: faction, updated_at: new Date() }).eq('id', userId).select('role, faction').single();
         if (error) throw new Error(`阵营选择失败: ${error.message}`);
         if (!data) throw new Error(`阵营更新失败：未找到用户档案。`);
         return data;
@@ -157,28 +171,39 @@ export const ApiService = {
     },
 
     async signUp(email, password, fullName) {
-        const { data: authData, error: authError } = await this.db.auth.signUp({ email, password });
+        // Step 1: Create the user in auth.users
+        const { data: authData, error: authError } = await this.db.auth.signUp({
+            email,
+            password,
+        });
         if (authError) throw authError;
+        if (!authData.user) throw new Error('用户注册失败，无法获取新用户信息。');
 
-        // Manually insert profile, making the flow more robust and removing trigger dependency.
-        if (authData.user) {
-            const { error: profileError } = await this.db
-                .from('profiles')
-                .insert({
-                    id: authData.user.id,
-                    full_name: fullName,
-                    email: authData.user.email
-                });
+        const userId = authData.user.id;
 
-            if (profileError) {
-                // This is a critical error, as the user will not be able to log in without a profile.
-                console.error(`User created in auth, but failed to create profile: ${profileError.message}`);
-                throw new Error('用户注册成功，但创建档案失败。请联系管理员。');
-            }
-        } else {
-            // This case should ideally not happen if signUp was successful without an error.
-            throw new Error('用户注册失败，无法获取新用户信息。');
+        // Step 2: Create the profile in public.profiles
+        const { error: profileError } = await this.db
+            .from('profiles')
+            .insert({ id: userId });
+
+        if (profileError) {
+            console.error(`User created in auth, but failed to create profile: ${profileError.message}`);
+            // Here you might want to add logic to delete the auth.user if the profile creation fails,
+            // but for now, we'll just throw a clear error.
+            throw new Error('用户档案创建失败，请联系管理员。');
         }
+
+        // Step 3: Create the score entry in public.scores
+        const { error: scoreError } = await this.db
+            .from('scores')
+            .insert({ user_id: userId, username: fullName });
+
+        if (scoreError) {
+            console.error(`Profile created, but failed to create score entry: ${scoreError.message}`);
+            // This is also a partial failure state.
+            throw new Error('用户分数记录创建失败，请联系管理员。');
+        }
+
         return authData;
     },
 
