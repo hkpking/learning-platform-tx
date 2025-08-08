@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v2.4.1] Fixed login flow, new hub UI rendering, and added module imports.
+ * [v2.4.2] Fixed "chapter not found" error on continue learning.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -10,7 +10,7 @@ import { AuthView } from './views/auth.js';
 import { CourseView } from './views/course.js';
 import { AdminView } from './views/admin.js';
 import { ProfileView } from './views/profile.js';
-import { getFactionInfo } from './constants.js'; // <-- ADDED IMPORT
+import { getFactionInfo } from './constants.js';
 
 const App = {
     init() {
@@ -311,6 +311,9 @@ const App = {
                 continueLearningTitle.textContent = chapter ? `${chapter.title} - ${firstUncompleted.title}` : firstUncompleted.title;
 
                 const clickHandler = () => {
+                    // **THE FIX IS HERE**
+                    // Set the current category ID before selecting the chapter.
+                    AppState.current.categoryId = firstUncompleted.categoryId;
                     UI.switchTopLevelView('main');
                     CourseView.selectChapter(firstUncompleted.chapterId);
                     setTimeout(() => CourseView.selectBlock(firstUncompleted.id), 100);
