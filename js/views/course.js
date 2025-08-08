@@ -3,7 +3,6 @@ import { UI } from '../ui.js';
 import { ApiService } from '../services/api.js';
 import { ComponentFactory } from '../components/factory.js';
 export const CourseView = {
-    _latestLeaderboardRequest: 0,
     async showCategoryView() {
         UI.switchCourseView('category-selection');
         const grid = UI.elements.mainApp.categoryGrid;
@@ -19,7 +18,7 @@ export const CourseView = {
         const prevCat = cats[catIdx - 1];
         if (!prevCat) return true;
         const prevCatBlocks = AppState.learningMap.flatStructure.filter(b => b.categoryId === prevCat.id);
-        if (prevCatBlocks.length === 0) return true;
+        if (prevCatBlocks.length === 0) return false;
         return prevCatBlocks.every(b => AppState.userProgress.completedBlocks.has(b.id));
     },
     showChapterView() {
@@ -34,12 +33,8 @@ export const CourseView = {
         cat.chapters.forEach(ch => grid.appendChild(ComponentFactory.createChapterCard(ch)));
     },
     async updateLeaderboard() {
-        const requestId = ++this._latestLeaderboardRequest;
         try {
             const board = await ApiService.fetchLeaderboard();
-            if (requestId !== this._latestLeaderboardRequest) {
-                return;
-            }
             AppState.leaderboard = board;
             const list = UI.elements.leaderboardList;
             list.innerHTML = "";
@@ -47,11 +42,9 @@ export const CourseView = {
             board.forEach((p, i) => {
                 const rank = i + 1;
                 const item = document.createElement("div");
-                const isCurrentUser = AppState.user && (AppState.user.email === p.username || AppState.user.id === p.user_id);
-                item.className = `rank-item rank-${rank} flex items-center p-2 rounded-md ${isCurrentUser ? "bg-blue-500/30" : ""}`;
+                item.className = `rank-item rank-${rank} flex items-center p-2 rounded-md ${AppState.user && AppState.user.email === p.username ? "bg-blue-500/30" : ""}`;
                 let rankBadge = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `<div class="rank-badge flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg mr-3">${rank}</div>`;
-                const displayName = p.full_name || p.username.split('@')[0];
-                item.innerHTML = `<div class="w-10 text-center text-xl">${rankBadge}</div><div class="flex-grow"><div class="font-bold text-white truncate">${displayName}</div><div class="text-sm text-gray-400">${p.points} 分</div></div>`;
+                item.innerHTML = `<div class="w-10 text-center text-xl">${rankBadge}</div><div class="flex-grow"><div class="font-bold text-white truncate">${p.username.split("@")[0]}</div><div class="text-sm text-gray-400">${p.points} 分</div></div>`;
                 list.appendChild(item);
             });
         } catch (e) { console.error("Failed to update leaderboard:", e); UI.elements.leaderboardList.innerHTML = `<p class="text-center text-sm text-red-400">无法加载排名</p>`; }
@@ -62,7 +55,7 @@ export const CourseView = {
         UI.switchCourseView("chapter-detail");
         this.closeImmersiveViewer();
         const { contentArea, sidebarHeader, sidebarNav } = UI.elements.mainApp;
-        UI.renderLoading(contentArea, 'content'); sidebarNav.innerHTML = ""; sidebarHeader.innerHTML = "";
+        UI.renderLoading(contentArea); sidebarNav.innerHTML = ""; sidebarHeader.innerHTML = "";
         try {
             const chap = AppState.learningMap.categories.find(c => c.id === AppState.current.categoryId)?.chapters.find(ch => ch.id === AppState.current.chapterId);
             if (!chap) throw new Error("章节未找到");
@@ -120,23 +113,12 @@ export const CourseView = {
         const icon = type === 'video' ? `<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm8 6l-4 3V7l4 3z"></path></svg>` : `<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`;
         return `<div onclick="CourseView.openImmersiveViewer('${type}', '${block[`${type}_url`]}', '${block.title.replace(/'/g, "\\'")}')" class="relative rounded-lg overflow-hidden cursor-pointer group mb-6"><div class="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex items-center justify-center"><div class="text-center"><div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">${icon}</div><h4 class="text-white text-xl font-bold">${block.title}</h4><p class="text-gray-300">${type === 'video' ? '点击播放视频' : '点击打开文档'}</p></div></div><img src="https://placehold.co/800x450/0f172a/38bdf8?text=${encodeURIComponent(block.title)}" alt="${block.title}" class="w-full h-auto"></div>`;
     },
-    completeBlock(blockId) {
-        if (AppState.userProgress.completedBlocks.has(blockId)) return;
-
+    async completeBlock(blockId) {
         AppState.userProgress.completedBlocks.add(blockId);
-        this.showDetailView();
-
-        ApiService.saveUserProgress(
-            AppState.user.id,
-            {
-                completed: Array.from(AppState.userProgress.completedBlocks),
-                awarded: Array.from(AppState.userProgress.awardedPointsBlocks)
-            }
-        ).catch(e => {
-            UI.showNotification(`进度保存失败: ${e.message}`, "error");
-            AppState.userProgress.completedBlocks.delete(blockId);
+        try {
+            await ApiService.saveUserProgress(AppState.user.id, { completed: Array.from(AppState.userProgress.completedBlocks), awarded: Array.from(AppState.userProgress.awardedPointsBlocks) });
             this.showDetailView();
-        });
+        } catch (e) { UI.showNotification(e.message, "error"); AppState.userProgress.completedBlocks.delete(blockId); }
     },
     isBlockUnlocked(blockId) {
         const flat = AppState.learningMap.flatStructure;

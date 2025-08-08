@@ -9,11 +9,28 @@ import { ApiService } from './services/api.js';
 import { AuthView } from './views/auth.js';
 import { CourseView } from './views/course.js';
 import { AdminView } from './views/admin.js';
-import { ProfileView } from './views/profile.js';
-import { getFactionInfo } from './constants.js';
+
+// [NEW] Centralized faction information for scalability
+const FACTION_MAP = {
+    it_dept: { name: 'IT技术部', color: 'blue' },
+    im_dept: { name: '信息管理部', color: 'cyan' },
+    pmo_dept: { name: '项目综合管理部', color: 'indigo' },
+    dm_dept: { name: '数据管理部', color: 'emerald' },
+    strategy_dept: { name: '战略管理部', color: 'amber' },
+    logistics_dept: { name: '物流IT部', color: 'orange' },
+    aoc_dept: { name: '项目AOC', color: 'rose' },
+    '3333_dept': { name: '3333', color: 'purple' },
+    // Fallback for old data or any unknown factions
+    tianming: { name: 'IT技术部', color: 'blue' }, // For smooth transition
+    nishang: { name: '项目综合管理部', color: 'indigo' }, // For smooth transition
+    default: { name: '未知部门', color: 'gray' }
+};
+
+const getFactionInfo = (factionId) => {
+    return FACTION_MAP[factionId] || FACTION_MAP.default;
+};
 
 const App = {
-    _latestLeaderboardRequest: 0,
     init() {
         this.bindEvents();
         this.initLandingPage();
@@ -35,8 +52,6 @@ const App = {
         UI.elements.auth.form.addEventListener('submit', (e) => AuthView.handleAuthSubmit(e));
         UI.elements.auth.switchBtn.addEventListener('click', (e) => AuthView.switchAuthMode(e));
         UI.elements.mainApp.logoutBtn.addEventListener('click', () => ApiService.signOut());
-        UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView());
-        UI.elements.profile.backToMainAppBtn.addEventListener('click', () => UI.switchTopLevelView('main'));
         UI.elements.mainApp.restartBtn.addEventListener('click', () => this.handleRestartRequest());
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
         UI.elements.mainApp.backToCategoriesBtn.addEventListener('click', () => CourseView.showCategoryView());
@@ -88,20 +103,12 @@ const App = {
         }
         playNarrative();
         const animatedElements = document.querySelectorAll('.fade-in-up');
-        const observer = new IntersectionObserver((entries, observer) => {
-            entries.forEach((entry, index) => {
-                if (entry.isIntersecting) {
-                    // Stagger the animation by adding a delay based on the element's order
-                    entry.target.style.animationDelay = `${index * 100}ms`;
-                    entry.target.classList.add('is-visible');
-                    observer.unobserve(entry.target); // Stop observing once animated
-                }
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('is-visible');
             });
-        }, { threshold: 0.1 });
-
-        animatedElements.forEach(el => {
-            observer.observe(el);
-        });
+        }, { threshold: 0.2 });
+        animatedElements.forEach(el => observer.observe(el));
         
         try {
             const challenges = await ApiService.fetchActiveChallenges();
@@ -114,10 +121,9 @@ const App = {
     },
     
     async updateLandingPageLeaderboards() {
-        const requestId = ++this._latestLeaderboardRequest;
         const { personalBoard, factionBoard } = UI.elements.landing;
-        UI.renderLoading(personalBoard, 'leaderboard');
-        UI.renderLoading(factionBoard, 'faction-leaderboard');
+        UI.renderLoading(personalBoard);
+        UI.renderLoading(factionBoard);
         
         const challengeContainer = document.getElementById('active-challenge-container');
         const challengeSection = document.getElementById('challenge-section');
@@ -143,11 +149,6 @@ const App = {
                 ApiService.fetchLeaderboard(),
                 ApiService.fetchFactionLeaderboard()
             ]);
-
-            if (requestId !== this._latestLeaderboardRequest) {
-                return;
-            }
-
             AppState.leaderboard = personalData;
             AppState.factionLeaderboard = factionData;
 
@@ -158,10 +159,9 @@ const App = {
                     const rank = i + 1;
                     const isCurrentUser = AppState.user && p.user_id === AppState.user.id;
                     const icon = ['🥇', '🥈', '🥉'][rank - 1] || `<span class="rank-number">${rank}</span>`;
-                    const displayName = p.full_name || p.username.split('@')[0];
                     return `<div class="personal-leaderboard-item rank-${rank} ${isCurrentUser ? 'current-user' : ''}">
                                 <div class="rank-icon">${icon}</div>
-                                <div class="player-name">${displayName}</div>
+                                <div class="player-name">${p.username.split('@')[0]}</div>
                                 <div class="player-score">${p.points}</div>
                             </div>`;
                 }).join('');
@@ -252,14 +252,9 @@ const App = {
             AppState.userProgress.awardedPointsBlocks = new Set(progress.awarded);
             AppState.learningMap.categories = categories;
             this.flattenLearningStructure();
-
-            // New logic for Smart Nav
-            this.setupSmartNavigation();
-            this.renderCourseList();
-
             UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !AppState.profile || AppState.profile.role !== 'admin');
-            UI.elements.mainApp.userGreeting.textContent = `欢迎, ${AppState.profile.full_name || AppState.user.email.split('@')[0]}`;
-            UI.switchTopLevelView('main'); // This might need to change if the user lands on a different default view
+            UI.elements.mainApp.userGreeting.textContent = `欢迎, ${AppState.user.email.split('@')[0]}`;
+            UI.switchTopLevelView('main');
             CourseView.showCategoryView();
             CourseView.updateLeaderboard(); 
             ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
@@ -270,91 +265,6 @@ const App = {
             console.error("Failed to load main app data:", error);
             UI.showNotification(`加载数据失败: ${error.message}`, 'error');
         }
-    },
-
-    setupSmartNavigation() {
-        const smartNavContainer = document.getElementById('smart-nav-container');
-        const mainHubTitle = document.getElementById('main-hub-title');
-        const startBtn = document.getElementById('new-start-btn');
-        const continueLearningBtn = document.getElementById('continue-learning-btn');
-        const continueLearningTitle = document.getElementById('continue-learning-title');
-        const smartNavUsername = document.getElementById('smart-nav-username');
-
-        const firstUncompleted = AppState.learningMap.flatStructure.find(b => !AppState.userProgress.completedBlocks.has(b.id));
-
-        if (AppState.user && AppState.profile) {
-            smartNavUsername.textContent = AppState.profile.full_name || AppState.user.email.split('@')[0];
-            smartNavContainer.classList.remove('hidden');
-            mainHubTitle.classList.add('hidden');
-            startBtn.classList.add('hidden');
-
-            if (firstUncompleted) {
-                const chapter = AppState.learningMap.categories
-                    .flatMap(c => c.chapters)
-                    .find(ch => ch.id === firstUncompleted.chapterId);
-
-                continueLearningTitle.textContent = `${chapter.title} - ${firstUncompleted.title}`;
-
-                const clickHandler = () => {
-                    CourseView.selectChapter(firstUncompleted.chapterId);
-                    // A small delay to allow the view to switch before selecting the block
-                    setTimeout(() => {
-                        CourseView.selectBlock(firstUncompleted.id);
-                    }, 100);
-                };
-
-                continueLearningBtn.onclick = clickHandler;
-                document.getElementById('continue-learning-card').onclick = clickHandler;
-
-            } else {
-                continueLearningTitle.textContent = "恭喜你，已完成所有课程！";
-                continueLearningBtn.textContent = "重新学习";
-                continueLearningBtn.onclick = () => this.handleRestartRequest();
-            }
-        } else {
-            smartNavContainer.classList.add('hidden');
-            mainHubTitle.classList.remove('hidden');
-            startBtn.classList.remove('hidden');
-        }
-    },
-
-    renderCourseList() {
-        const container = document.getElementById('course-list-container');
-        if (!container || !AppState.user) {
-            if(container) container.innerHTML = '';
-            return;
-        };
-
-        const categories = AppState.learningMap.categories;
-        if (!categories || categories.length === 0) {
-            container.innerHTML = '<p class="text-gray-500">暂无课程篇章。</p>';
-            return;
-        }
-
-        let html = '<h2 class="text-3xl text-amber-100 font-calligraphy tracking-wider mb-6">我的学习路径</h2>';
-
-        html += categories.map(category => {
-            const allBlocks = AppState.learningMap.flatStructure.filter(b => b.categoryId === category.id);
-            const completedBlocks = allBlocks.filter(b => AppState.userProgress.completedBlocks.has(b.id));
-            const progress = allBlocks.length > 0 ? Math.round((completedBlocks.length / allBlocks.length) * 100) : 0;
-
-            return `
-                <div class="course-card hub-card p-6 mb-4 flex justify-between items-center transition-all duration-300 hover:shadow-lg hover:border-sky-500/50 cursor-pointer" onclick="CourseView.selectCategory('${category.id}')">
-                    <div>
-                        <h3 class="text-xl font-bold text-white">${category.title}</h3>
-                        <p class="text-sm text-gray-400 mt-1">${category.description}</p>
-                    </div>
-                    <div class="w-1/4 text-right ml-4">
-                        <p class="text-lg font-bold text-sky-400">${progress}%</p>
-                        <div class="w-full bg-slate-700 rounded-full h-2.5 mt-1">
-                            <div class="bg-sky-500 h-2.5 rounded-full" style="width: ${progress}%"></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        container.innerHTML = html;
     },
 
     flattenLearningStructure() {
