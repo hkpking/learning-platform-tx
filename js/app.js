@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v2.3.1] Updated to handle admin challenge view.
+ * [v2.4.0] Fixed login flow and new hub UI rendering.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -16,14 +16,18 @@ const App = {
     init() {
         this.bindEvents();
         this.initLandingPage();
-        ApiService.db.auth.onAuthStateChange((_, session) => {
-            if (session) {
+        ApiService.initialize(); // Initialize Supabase client
+        ApiService.db.auth.onAuthStateChange((_event, session) => {
+            if (session && session.user) {
                 this.handleLogin(session.user);
             } else {
-                AppState.user = null; AppState.profile = null;
+                AppState.user = null;
+                AppState.profile = null;
                 resetUserProgressState();
                 UI.switchTopLevelView('landing');
                 this.updateLandingPageLeaderboards();
+                this.setupSmartNavigation(); // Update UI for logged-out state
+                this.renderCourseList(); // Clear course list for logged-out state
             }
         });
     },
@@ -35,7 +39,12 @@ const App = {
         UI.elements.auth.switchBtn.addEventListener('click', (e) => AuthView.switchAuthMode(e));
         UI.elements.mainApp.logoutBtn.addEventListener('click', () => ApiService.signOut());
         UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView());
-        UI.elements.profile.backToMainAppBtn.addEventListener('click', () => UI.switchTopLevelView('main'));
+        UI.elements.profile.backToMainAppBtn.addEventListener('click', () => {
+            // After editing profile, we need to refresh the main view
+            this.setupSmartNavigation();
+            this.renderCourseList();
+            UI.switchTopLevelView('landing'); // Switch to landing which now serves as the main hub
+        });
         UI.elements.mainApp.restartBtn.addEventListener('click', () => this.handleRestartRequest());
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
         UI.elements.mainApp.backToCategoriesBtn.addEventListener('click', () => CourseView.showCategoryView());
@@ -53,7 +62,6 @@ const App = {
             }
         });
 
-        // [NEW] Admin View Navigation
         UI.elements.admin.adminNav.addEventListener('click', (e) => {
             const button = e.target.closest('button[data-admin-view]');
             if (button) {
@@ -105,27 +113,32 @@ const App = {
     },
     
     async updateLandingPageLeaderboards() {
-        const { personalBoard, factionBoard } = UI.elements.landing;
-        UI.renderLoading(personalBoard);
-        UI.renderLoading(factionBoard);
+        const personalBoard = document.getElementById('landing-personal-board');
+        const factionBoard = document.getElementById('landing-faction-board');
+        if (!personalBoard || !factionBoard) return;
+
+        UI.renderLoading(personalBoard, 'leaderboard');
+        UI.renderLoading(factionBoard, 'faction-leaderboard');
         
         const challengeContainer = document.getElementById('active-challenge-container');
         const challengeSection = document.getElementById('challenge-section');
-        challengeContainer.innerHTML = '';
-        if (AppState.activeChallenges && AppState.activeChallenges.length > 0) {
-            challengeSection.classList.remove('hidden');
-            AppState.activeChallenges.forEach(challenge => {
-                const challengeCard = document.createElement('div');
-                challengeCard.className = 'bg-slate-800/50 p-6 rounded-lg text-center';
-                challengeCard.innerHTML = `
-                    <h3 class="text-2xl font-bold text-amber-300 mb-2">${challenge.title}</h3>
-                    <p class="text-gray-400 mb-4">${challenge.description}</p>
-                    <p class="text-sm text-gray-500">挑战时间: ${new Date(challenge.start_date).toLocaleDateString()} - ${new Date(challenge.end_date).toLocaleDateString()}</p>
-                `;
-                challengeContainer.appendChild(challengeCard);
-            });
-        } else {
-            challengeSection.classList.add('hidden');
+        if(challengeContainer) {
+            challengeContainer.innerHTML = '';
+            if (AppState.activeChallenges && AppState.activeChallenges.length > 0) {
+                challengeSection.classList.remove('hidden');
+                AppState.activeChallenges.forEach(challenge => {
+                    const challengeCard = document.createElement('div');
+                    challengeCard.className = 'bg-slate-800/50 p-6 rounded-lg text-center';
+                    challengeCard.innerHTML = `
+                        <h3 class="text-2xl font-bold text-amber-300 mb-2">${challenge.title}</h3>
+                        <p class="text-gray-400 mb-4">${challenge.description}</p>
+                        <p class="text-sm text-gray-500">挑战时间: ${new Date(challenge.start_date).toLocaleDateString()} - ${new Date(challenge.end_date).toLocaleDateString()}</p>
+                    `;
+                    challengeContainer.appendChild(challengeCard);
+                });
+            } else {
+                challengeSection.classList.add('hidden');
+            }
         }
 
         try {
@@ -188,11 +201,12 @@ const App = {
         AppState.user = user;
         try {
             const profile = await ApiService.getProfile(user.id);
-            AppState.profile = profile || { role: 'user', faction: null };
+            AppState.profile = profile || { role: 'user', faction: null, full_name: null };
+            
             if (!AppState.profile.faction) {
                 this.showFactionSelection();
             } else {
-                this.loadMainAppData();
+                await this.loadMainAppData();
             }
         } catch (error) {
             console.error("Login process failed:", error);
@@ -218,7 +232,7 @@ const App = {
             this.hideFactionSelection();
             const factionInfo = getFactionInfo(faction);
             UI.showNotification(`你已加入【${factionInfo.name}】！`, 'success');
-            this.loadMainAppData();
+            await this.loadMainAppData();
         } catch (error) {
             console.error("Error during faction selection:", error);
             UI.showNotification(error.message, 'error');
@@ -227,26 +241,29 @@ const App = {
 
     async loadMainAppData() {
         try {
-            this.updateLandingPageLeaderboards();
+            // This switches to the main view which is now the new hub
+            UI.switchTopLevelView('landing'); 
             
             const [progress, categories] = await Promise.all([
                 ApiService.getUserProgress(AppState.user.id),
                 ApiService.fetchLearningMap(),
             ]);
+            
             AppState.userProgress.completedBlocks = new Set(progress.completed);
             AppState.userProgress.awardedPointsBlocks = new Set(progress.awarded);
             AppState.learningMap.categories = categories;
             this.flattenLearningStructure();
 
-            // New logic for Smart Nav and Course List
+            // Setup UI for logged-in user
             this.setupSmartNavigation();
             this.renderCourseList();
+            this.updateLandingPageLeaderboards(); // Refresh leaderboards with user context
 
             UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !AppState.profile || AppState.profile.role !== 'admin');
-            UI.elements.mainApp.userGreeting.textContent = `欢迎, ${AppState.user.email.split('@')[0]}`;
-            UI.switchTopLevelView('main');
-            CourseView.showCategoryView();
-            CourseView.updateLeaderboard(); 
+            const displayName = AppState.profile.full_name || AppState.user.email.split('@')[0];
+            UI.elements.mainApp.userGreeting.textContent = `欢迎, ${displayName}`;
+            
+            // Set up real-time updates
             ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
                 CourseView.updateLeaderboard();
                 this.updateLandingPageLeaderboards();
@@ -254,29 +271,34 @@ const App = {
         } catch (error) {
             console.error("Failed to load main app data:", error);
             UI.showNotification(`加载数据失败: ${error.message}`, 'error');
+            // Fallback to a simpler view if data loading fails
+            UI.switchTopLevelView('landing');
         }
     },
 
     setupSmartNavigation() {
         const smartNavContainer = document.getElementById('smart-nav-container');
         const mainHubTitle = document.getElementById('main-hub-title');
-        const continueLearningBtn = document.getElementById('continue-learning-btn');
-        const continueLearningTitle = document.getElementById('continue-learning-title');
-        const smartNavUsername = document.getElementById('smart-nav-username');
-
-        const firstUncompleted = AppState.learningMap.flatStructure.find(b => !AppState.userProgress.completedBlocks.has(b.id));
+        
+        if (!smartNavContainer || !mainHubTitle) return;
 
         if (AppState.user && AppState.profile) {
+            const smartNavUsername = document.getElementById('smart-nav-username');
+            const continueLearningBtn = document.getElementById('continue-learning-btn');
+            const continueLearningTitle = document.getElementById('continue-learning-title');
+            
             smartNavUsername.textContent = AppState.profile.full_name || AppState.user.email.split('@')[0];
             smartNavContainer.classList.remove('hidden');
             mainHubTitle.classList.add('hidden');
+
+            const firstUncompleted = AppState.learningMap.flatStructure.find(b => !AppState.userProgress.completedBlocks.has(b.id));
 
             if (firstUncompleted) {
                 const chapter = AppState.learningMap.categories
                     .flatMap(c => c.chapters)
                     .find(ch => ch.id === firstUncompleted.chapterId);
 
-                continueLearningTitle.textContent = `${chapter.title} - ${firstUncompleted.title}`;
+                continueLearningTitle.textContent = chapter ? `${chapter.title} - ${firstUncompleted.title}` : firstUncompleted.title;
 
                 const clickHandler = () => {
                     UI.switchTopLevelView('main');
@@ -291,8 +313,10 @@ const App = {
                 continueLearningTitle.textContent = "恭喜你，已完成所有课程！";
                 continueLearningBtn.textContent = "查看成就";
                 continueLearningBtn.onclick = () => ProfileView.showProfileView();
+                 document.getElementById('continue-learning-card').onclick = () => ProfileView.showProfileView();
             }
         } else {
+            // Logged out state
             smartNavContainer.classList.add('hidden');
             mainHubTitle.classList.remove('hidden');
         }
@@ -300,10 +324,12 @@ const App = {
 
     renderCourseList() {
         const container = document.getElementById('course-list-container');
-        if (!container || !AppState.user) {
-            if(container) container.innerHTML = '';
+        if (!container) return;
+        
+        if (!AppState.user) {
+            container.innerHTML = '';
             return;
-        };
+        }
 
         const categories = AppState.learningMap.categories;
         if (!categories || categories.length === 0) {
@@ -317,11 +343,13 @@ const App = {
             const allBlocks = AppState.learningMap.flatStructure.filter(b => b.categoryId === category.id);
             const completedBlocks = allBlocks.filter(b => AppState.userProgress.completedBlocks.has(b.id));
             const progress = allBlocks.length > 0 ? Math.round((completedBlocks.length / allBlocks.length) * 100) : 0;
+            const isLocked = !CourseView.isCategoryUnlocked(category.id);
 
             return `
-                <div class="course-card hub-card p-6 mb-4 flex justify-between items-center transition-all duration-300 hover:shadow-lg hover:border-sky-500/50 cursor-pointer" onclick="App.handleCourseCardClick('${category.id}')">
+                <div class="course-card hub-card p-6 mb-4 flex justify-between items-center transition-all duration-300 ${isLocked ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:border-sky-500/50 cursor-pointer'}" 
+                     onclick="${isLocked ? `UI.showNotification('请先完成前置篇章来解锁', 'error')` : `App.handleCourseCardClick('${category.id}')`}">
                     <div>
-                        <h3 class="text-xl font-bold text-white">${category.title}</h3>
+                        <h3 class="text-xl font-bold text-white">${category.title} ${isLocked ? '🔒' : ''}</h3>
                         <p class="text-sm text-gray-400 mt-1">${category.description}</p>
                     </div>
                     <div class="w-1/4 text-right ml-4 flex-shrink-0">
@@ -357,14 +385,18 @@ const App = {
             AppState.userProgress.completedBlocks = new Set(progress.completed);
             AppState.userProgress.awardedPointsBlocks = new Set(progress.awarded);
             UI.showNotification("您的学习进度已重置！", "success");
-            CourseView.showCategoryView();
+            this.renderCourseList(); // Re-render course list to show 0% progress
+            CourseView.showCategoryView(); // This might not be needed if we stay on the hub
         } catch (error) { UI.showNotification(error.message, "error"); }
     },
 };
 
+// Expose App to global scope to be accessible by inline onclick handlers
+window.App = App;
+window.UI = UI; // Expose UI for inline notifications
+
 window.onload = () => {
     try {
-        ApiService.initialize();
         App.init();
     } catch (error) {
         console.error("Failed to initialize application:", error);
