@@ -1,14 +1,17 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.3.2] Adds API call for finishing challenges.
+ * [v2.4.0] Adds full_name to signUp and profile fetches.
  */
 export const ApiService = {
     db: null,
     initialize() {
         const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
         if (!SUPABASE_URL || !SUPABASE_KEY) {
-            throw new Error("Supabase URL or Key is missing. Make sure config.js is loaded correctly.");
+            // In a real app, you might want a more robust error display
+            console.error("Supabase URL or Key is missing.");
+            document.body.innerHTML = '<div style="color:red; text-align:center; padding: 2rem;">Supabase configuration is missing. The application cannot start.</div>';
+            throw new Error("Supabase URL or Key is missing.");
         }
         this.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     },
@@ -88,11 +91,16 @@ export const ApiService = {
 
     async getProfile(userId) {
         let { data, error } = await this.db.from('profiles').select('role, faction, full_name').eq('id', userId).single();
-        if (error && error.code === 'PGRST116') {
+        if (error && error.code === 'PGRST116') { // Profile does not exist, create it
+            // The trigger should have created a basic profile. If not, we insert.
             const { data: newProfile, error: insertError } = await this.db.from('profiles').insert([{ id: userId, role: 'user' }]).select('role, faction, full_name').single();
-            if (insertError) throw new Error('无法为新用户创建档案。');
+            if (insertError) {
+                 console.error("Error creating profile:", insertError);
+                 throw new Error('无法为新用户创建档案。');
+            }
             return newProfile;
         } else if (error) {
+            console.error("Error fetching profile:", error);
             throw new Error('获取用户档案时出错。');
         }
         return data;
@@ -108,7 +116,7 @@ export const ApiService = {
     async updateProfile(userId, profileData) {
         const { data, error } = await this.db
             .from('profiles')
-            .update(profileData)
+            .update({ ...profileData, updated_at: new Date() })
             .eq('id', userId)
             .select('*')
             .single();
@@ -157,8 +165,8 @@ export const ApiService = {
         const { data: authData, error: authError } = await this.db.auth.signUp({ email, password });
         if (authError) throw authError;
         if (authData.user) {
-            // This assumes a trigger on the auth.users table creates a profile.
-            // We just need to update it with the full name.
+            // After user is created in auth.users, a trigger should create a profile.
+            // We then update this profile with the full name.
             const { error: profileError } = await this.db
                 .from('profiles')
                 .update({ full_name: fullName, updated_at: new Date() })
@@ -178,5 +186,10 @@ export const ApiService = {
         if (error) throw error;
         return data;
     },
-    async signOut() { await this.db.auth.signOut(); },
+    async signOut() { 
+        const { error } = await this.db.auth.signOut();
+        if (error) {
+            console.error("Sign out error", error);
+        }
+    },
 };
