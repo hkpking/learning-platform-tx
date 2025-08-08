@@ -1,7 +1,7 @@
 import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { ApiService } from '../services/api.js';
-import { getFactionInfo } from '../constants.js'; // <-- ADDED IMPORT
+import { getFactionInfo } from '../constants.js';
 
 export const ProfileView = {
     async showProfileView() {
@@ -12,13 +12,11 @@ export const ProfileView = {
         try {
             const userId = AppState.user.id;
             
-            // Use a Promise.all to fetch data concurrently for better performance
             const [profile, scoreData] = await Promise.all([
                 ApiService.getProfile(userId),
-                ApiService.getScoreInfo(userId) // <-- CORRECTED FUNCTION NAME
+                ApiService.getScoreInfo(userId)
             ]);
 
-            // Update AppState with the latest fetched data
             AppState.profile = { 
                 ...AppState.profile, 
                 ...profile, 
@@ -75,21 +73,23 @@ export const ProfileView = {
         const profile = AppState.profile;
         const factionInfo = getFactionInfo(profile.faction);
         const emailPrefix = AppState.user.email.split('@')[0];
-        // Use username from profile for avatar, fallback to email
         const avatarChar = (profile.username || emailPrefix).charAt(0).toUpperCase();
 
         let nameHtml;
-        // Use username for display
+        // Check if a username exists. If not, show the form to add one.
         if (profile.username) {
             nameHtml = `
                 <h2 class="text-2xl font-bold text-white">${profile.username}</h2>
                 <p class="text-sm text-gray-400">(${AppState.user.email})</p>
             `;
         } else {
-            // This case should be rare if signup is enforced correctly
-             nameHtml = `
-                <h2 class="text-2xl font-bold text-white">${emailPrefix}</h2>
-             `;
+            nameHtml = `
+                <form id="profile-name-form">
+                    <p class="text-gray-400 mb-2">请设置您的显示姓名：</p>
+                    <input type="text" id="profile-name-input" placeholder="请输入姓名" class="input-field text-center w-full p-2 rounded-lg" required>
+                    <button type="submit" class="w-full mt-2 btn btn-primary text-sm py-2 px-4 rounded-lg">保存姓名</button>
+                </form>
+            `;
         }
 
         container.innerHTML = `
@@ -101,5 +101,33 @@ export const ProfileView = {
             </div>
             <p class="text-lg text-${factionInfo.color}-400 font-semibold mt-2">${factionInfo.name}</p>
         `;
+
+        // Bind events to the newly created elements
+        this.bindIdentityEvents();
     },
+
+    bindIdentityEvents() {
+        const nameForm = document.getElementById('profile-name-form');
+        if (nameForm) {
+            nameForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('profile-name-input');
+                const newName = input.value.trim();
+                if (!newName) return;
+
+                try {
+                    const updatedScoreInfo = await ApiService.updateUsername(AppState.user.id, newName);
+                    // Update the global state with the new username
+                    AppState.profile.username = updatedScoreInfo.username;
+                    UI.showNotification('姓名更新成功！', 'success');
+                    // Re-render the section to show the new name instead of the form
+                    this.renderIdentitySection();
+                    // Also update the main greeting in the header
+                    UI.elements.mainApp.userGreeting.textContent = `欢迎, ${updatedScoreInfo.username}`;
+                } catch (error) {
+                    UI.showNotification(error.message, 'error');
+                }
+            });
+        }
+    }
 };
