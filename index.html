@@ -90,42 +90,44 @@
                 <div id="main-content">
                     <main>
                         <section id="hub" class="min-h-screen flex items-center justify-center bg-black pt-24 pb-12">
-                            <div class="container mx-auto px-4 fade-in-up">
+                            <div class="container mx-auto px-4">
                                 
-                                <div class="text-center mb-12">
+                                <div class="text-center mb-12 fade-in-up">
                                     <h1 class="text-5xl text-amber-100 font-calligraphy tracking-wider">天命征途</h1>
                                     <p class="text-lg text-gray-400 mt-2">星图指引，英名永存。此为汝之道，亦为汝之荣耀。</p>
                                     <button id="new-start-btn" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg mt-8">开启征途</button>
                                 </div>
                                 
-                                <div class="grid lg:grid-cols-2 gap-8 md:gap-12">
-                                    <div class="hub-card p-8">
-                                        <h2 class="hub-title">修炼星图</h2>
-                                        <div class="flex flex-col space-y-4">
-                                            <div class="flex items-center justify-between"><div class="path-node current-milestone"><div class="path-node-icon">启</div><p class="path-node-label">天命人</p></div><div class="path-line-complete"></div><div class="path-node"><div class="path-node-icon">行</div><p class="path-node-label">行者</p></div><div class="path-line"></div><div class="path-node"><div class="path-node-icon">觉</div><p class="path-node-label">佛陀</p></div></div>
-                                            <div class="flex items-center justify-around"><div class="path-node"><div class="path-node-icon">刚</div><p class="path-node-label">金刚</p></div><div class="path-line max-w-xs"></div><div class="path-node"><div class="path-node-icon is-final">圣</div><p class="path-node-label">斗战胜佛</p></div></div>
+                                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
+                                    <!-- Main Content Column -->
+                                    <div class="lg:col-span-2 space-y-8">
+                                        <div id="star-map-card" class="hub-card p-8 fade-in-up">
+                                            <h2 class="hub-title">修炼星图</h2>
+                                            <div class="flex flex-col space-y-4">
+                                                <div class="flex items-center justify-between"><div class="path-node current-milestone"><div class="path-node-icon">启</div><p class="path-node-label">天命人</p></div><div class="path-line-complete"></div><div class="path-node"><div class="path-node-icon">行</div><p class="path-node-label">行者</p></div><div class="path-line"></div><div class="path-node"><div class="path-node-icon">觉</div><p class="path-node-label">佛陀</p></div></div>
+                                                <div class="flex items-center justify-around"><div class="path-node"><div class="path-node-icon">刚</div><p class="path-node-label">金刚</p></div><div class="path-line max-w-xs"></div><div class="path-node"><div class="path-node-icon is-final">圣</div><p class="path-node-label">斗战胜佛</p></div></div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    
-                                    <!-- [NEW] 部门挑战容器 -->
-                                    <div id="challenge-section" class="hub-card p-8 hidden">
-                                        <h2 class="hub-title">部门挑战</h2>
-                                        <div id="active-challenge-container">
-                                            <!-- 挑战卡片将由JS动态渲染 -->
+
+                                        <div id="challenge-section" class="hub-card p-8 hidden fade-in-up">
+                                            <h2 class="hub-title">部门挑战</h2>
+                                            <div id="active-challenge-container">
+                                                <!-- Challenge cards will be rendered by JS -->
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="grid md:grid-cols-2 gap-8 md:gap-12">
-                                        <div class="hub-card p-8">
+                                    <!-- Sidebar Column -->
+                                    <div class="space-y-8">
+                                        <div class="hub-card p-8 fade-in-up">
                                             <h2 class="hub-title">部门榜</h2>
                                             <div id="landing-faction-board" class="space-y-6"></div>
                                         </div>
-                                        <div class="hub-card p-8">
+                                        <div class="hub-card p-8 fade-in-up">
                                             <h2 class="hub-title">个人榜</h2>
                                             <div id="landing-personal-board" class="space-y-2"></div>
                                         </div>
                                     </div>
-
                                 </div>
 
                             </div>

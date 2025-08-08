@@ -88,12 +88,20 @@ const App = {
         }
         playNarrative();
         const animatedElements = document.querySelectorAll('.fade-in-up');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) entry.target.classList.add('is-visible');
+        const observer = new IntersectionObserver((entries, observer) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    // Stagger the animation by adding a delay based on the element's order
+                    entry.target.style.animationDelay = `${index * 100}ms`;
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target); // Stop observing once animated
+                }
             });
-        }, { threshold: 0.2 });
-        animatedElements.forEach(el => observer.observe(el));
+        }, { threshold: 0.1 });
+
+        animatedElements.forEach(el => {
+            observer.observe(el);
+        });
         
         try {
             const challenges = await ApiService.fetchActiveChallenges();
