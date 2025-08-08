@@ -42,9 +42,11 @@ export const CourseView = {
             board.forEach((p, i) => {
                 const rank = i + 1;
                 const item = document.createElement("div");
-                item.className = `rank-item rank-${rank} flex items-center p-2 rounded-md ${AppState.user && AppState.user.email === p.username ? "bg-blue-500/30" : ""}`;
+                const isCurrentUser = AppState.user && (AppState.user.email === p.username || AppState.user.id === p.user_id);
+                item.className = `rank-item rank-${rank} flex items-center p-2 rounded-md ${isCurrentUser ? "bg-blue-500/30" : ""}`;
                 let rankBadge = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `<div class="rank-badge flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg mr-3">${rank}</div>`;
-                item.innerHTML = `<div class="w-10 text-center text-xl">${rankBadge}</div><div class="flex-grow"><div class="font-bold text-white truncate">${p.username.split("@")[0]}</div><div class="text-sm text-gray-400">${p.points} 分</div></div>`;
+                const displayName = p.full_name || p.username.split('@')[0];
+                item.innerHTML = `<div class="w-10 text-center text-xl">${rankBadge}</div><div class="flex-grow"><div class="font-bold text-white truncate">${displayName}</div><div class="text-sm text-gray-400">${p.points} 分</div></div>`;
                 list.appendChild(item);
             });
         } catch (e) { console.error("Failed to update leaderboard:", e); UI.elements.leaderboardList.innerHTML = `<p class="text-center text-sm text-red-400">无法加载排名</p>`; }

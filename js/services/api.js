@@ -3,11 +3,15 @@
  * @description Encapsulates all interactions with the Supabase backend.
  * [v2.3.2] Adds API call for finishing challenges.
  */
-const SUPABASE_URL = 'https://mfxlcdsrnzxjslrfaawz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGxjZHNybnp4anNscmZhYXd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQyODMsImV4cCI6MjA2NzI2MDI4M30.wTuqqQkOP2_ZwfUU_xM0-X9YjkM39-kewjN41Pxa_wA';
-
 export const ApiService = {
-    db: supabase.createClient(SUPABASE_URL, SUPABASE_KEY),
+    db: null,
+    initialize() {
+        const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
+        if (!SUPABASE_URL || !SUPABASE_KEY) {
+            throw new Error("Supabase URL or Key is missing. Make sure config.js is loaded correctly.");
+        }
+        this.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    },
 
     async fetchLearningMap() {
         const { data, error } = await this.db.from("categories").select("*, chapters(*, sections(*, blocks(*)))").order("order").order("order", { foreignTable: "chapters" }).order("order", { foreignTable: "chapters.sections" }).order("order", { foreignTable: "chapters.sections.blocks" });
@@ -29,9 +33,14 @@ export const ApiService = {
     async deleteBlock(id) { const { error } = await this.db.from('blocks').delete().eq('id', id); if (error) throw error; },
     
     async fetchLeaderboard() {
-        const { data, error } = await this.db.from("scores").select("*").order("points",{ascending:false}).limit(10);
-        if(error)throw error;
-        return data
+        const { data, error } = await this.db
+            .rpc('get_leaderboard_with_names')
+            .limit(10);
+        if (error) {
+            console.error("Error fetching leaderboard:", error);
+            throw new Error("获取排行榜失败。");
+        }
+        return data;
     },
 
     async fetchFactionLeaderboard() {
@@ -78,9 +87,9 @@ export const ApiService = {
     },
 
     async getProfile(userId) {
-        let { data, error } = await this.db.from('profiles').select('role, faction').eq('id', userId).single();
+        let { data, error } = await this.db.from('profiles').select('role, faction, full_name').eq('id', userId).single();
         if (error && error.code === 'PGRST116') {
-            const { data: newProfile, error: insertError } = await this.db.from('profiles').insert([{ id: userId, role: 'user' }]).select('role, faction').single();
+            const { data: newProfile, error: insertError } = await this.db.from('profiles').insert([{ id: userId, role: 'user' }]).select('role, faction, full_name').single();
             if (insertError) throw new Error('无法为新用户创建档案。');
             return newProfile;
         } else if (error) {
@@ -90,9 +99,20 @@ export const ApiService = {
     },
 
     async updateProfileFaction(userId, faction) {
-        const { data, error } = await this.db.from('profiles').update({ faction: faction, updated_at: new Date() }).eq('id', userId).select('role, faction').single();
+        const { data, error } = await this.db.from('profiles').update({ faction: faction, updated_at: new Date() }).eq('id', userId).select('role, faction, full_name').single();
         if (error) throw new Error(`阵营选择失败: ${error.message}`);
         if (!data) throw new Error(`阵营更新失败：未找到用户档案。`);
+        return data;
+    },
+
+    async updateProfile(userId, profileData) {
+        const { data, error } = await this.db
+            .from('profiles')
+            .update(profileData)
+            .eq('id', userId)
+            .select('*')
+            .single();
+        if (error) throw new Error(`Failed to update profile: ${error.message}`);
         return data;
     },
 
@@ -133,10 +153,24 @@ export const ApiService = {
         }
     },
 
-    async signUp(email, password) {
-        const { data, error } = await this.db.auth.signUp({ email, password });
-        if (error) throw error;
-        return data;
+    async signUp(email, password, fullName) {
+        const { data: authData, error: authError } = await this.db.auth.signUp({ email, password });
+        if (authError) throw authError;
+        if (authData.user) {
+            // This assumes a trigger on the auth.users table creates a profile.
+            // We just need to update it with the full name.
+            const { error: profileError } = await this.db
+                .from('profiles')
+                .update({ full_name: fullName, updated_at: new Date() })
+                .eq('id', authData.user.id);
+
+            if (profileError) {
+                // Log the error but don't block the user from signing in.
+                // The user can update their name later in the profile page.
+                console.error(`User created, but failed to update profile with name: ${profileError.message}`);
+            }
+        }
+        return authData;
     },
 
     async signIn(email, password) {
