@@ -170,13 +170,13 @@ export const ApiService = {
         const { data: authData, error: authError } = await this.db.auth.signUp({ email, password });
         if (authError) throw authError;
         if (authData.user) {
-            const { error: profileError } = await this.db.from('profiles').insert({
-                id: authData.user.id,
-                full_name: fullName,
-                role: 'user'
-            });
+            const { error: profileError } = await this.db
+                .from('profiles')
+                .update({ full_name: fullName, updated_at: new Date() })
+                .eq('id', authData.user.id);
+
             if (profileError) {
-                throw new Error(`User created, but failed to create profile: ${profileError.message}`);
+                throw new Error(`User created, but failed to update profile with name: ${profileError.message}`);
             }
         }
         return authData;
