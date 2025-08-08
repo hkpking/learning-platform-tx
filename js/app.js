@@ -150,9 +150,10 @@ const App = {
                     const rank = i + 1;
                     const isCurrentUser = AppState.user && p.user_id === AppState.user.id;
                     const icon = ['🥇', '🥈', '🥉'][rank - 1] || `<span class="rank-number">${rank}</span>`;
+                    const displayName = p.full_name || p.username.split('@')[0];
                     return `<div class="personal-leaderboard-item rank-${rank} ${isCurrentUser ? 'current-user' : ''}">
                                 <div class="rank-icon">${icon}</div>
-                                <div class="player-name">${p.username.split('@')[0]}</div>
+                                <div class="player-name">${displayName}</div>
                                 <div class="player-score">${p.points}</div>
                             </div>`;
                 }).join('');
