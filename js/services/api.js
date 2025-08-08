@@ -90,16 +90,13 @@ export const ApiService = {
     },
 
     async getProfile(userId) {
-        let { data, error } = await this.db.from('profiles').select('role, faction, full_name').eq('id', userId).single();
-        if (error && error.code === 'PGRST116') { // Profile does not exist, create it
-            // The trigger should have created a basic profile. If not, we insert.
-            const { data: newProfile, error: insertError } = await this.db.from('profiles').insert([{ id: userId, role: 'user' }]).select('role, faction, full_name').single();
-            if (insertError) {
-                 console.error("Error creating profile:", insertError);
-                 throw new Error('无法为新用户创建档案。');
-            }
-            return newProfile;
-        } else if (error) {
+        const { data, error } = await this.db
+            .from('profiles')
+            .select('role, faction, full_name')
+            .eq('id', userId)
+            .single();
+
+        if (error) {
             console.error("Error fetching profile:", error);
             throw new Error('获取用户档案时出错。');
         }
@@ -125,18 +122,16 @@ export const ApiService = {
     },
 
     async getUserProgress(userId) {
-        const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId);
+        const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId).single();
         
-        if (error) {
+        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
             console.error('Error fetching user progress:', error);
             throw new Error('获取用户进度失败');
         }
 
-        const progress = data && data.length > 0 ? data[0] : null;
-
         return {
-            completed: progress ? progress.completed_blocks || [] : [],
-            awarded: progress ? progress.awarded_points_blocks || [] : []
+            completed: data ? data.completed_blocks || [] : [],
+            awarded: data ? data.awarded_points_blocks || [] : []
         };
     },
 
@@ -164,19 +159,25 @@ export const ApiService = {
     async signUp(email, password, fullName) {
         const { data: authData, error: authError } = await this.db.auth.signUp({ email, password });
         if (authError) throw authError;
+
+        // Manually insert profile, making the flow more robust and removing trigger dependency.
         if (authData.user) {
-            // After user is created in auth.users, a trigger should create a profile.
-            // We then update this profile with the full name.
             const { error: profileError } = await this.db
                 .from('profiles')
-                .update({ full_name: fullName, updated_at: new Date() })
-                .eq('id', authData.user.id);
+                .insert({
+                    id: authData.user.id,
+                    full_name: fullName,
+                    email: authData.user.email
+                });
 
             if (profileError) {
-                // Log the error but don't block the user from signing in.
-                // The user can update their name later in the profile page.
-                console.error(`User created, but failed to update profile with name: ${profileError.message}`);
+                // This is a critical error, as the user will not be able to log in without a profile.
+                console.error(`User created in auth, but failed to create profile: ${profileError.message}`);
+                throw new Error('用户注册成功，但创建档案失败。请联系管理员。');
             }
+        } else {
+            // This case should ideally not happen if signUp was successful without an error.
+            throw new Error('用户注册失败，无法获取新用户信息。');
         }
         return authData;
     },
