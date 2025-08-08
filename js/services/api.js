@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.5.0] Added achievement system functions.
+ * [v2.6.0] Added function to fetch faction challenge progress.
  */
 
 // Initialize the Supabase client immediately at the module level.
@@ -23,95 +23,32 @@ export const ApiService = {
         console.log("ApiService initialized with Supabase client.");
     },
 
-    // =================================================================
-    // NEW ACHIEVEMENT FUNCTIONS START
-    // =================================================================
-
-    /**
-     * Calls the database function to award an achievement to the current user.
-     * @param {string} achievementKey The unique trigger_key for the achievement.
-     */
     async awardAchievement(achievementKey) {
-        const { error } = await this.db.rpc('award_achievement', {
-            achievement_key: achievementKey
-        });
-        if (error) {
-            // We log the error but don't throw, as failing to award an achievement
-            // shouldn't break the user's main experience.
-            console.error(`Failed to award achievement [${achievementKey}]:`, error);
-        }
+        const { error } = await this.db.rpc('award_achievement', { achievement_key: achievementKey });
+        if (error) { console.error(`Failed to award achievement [${achievementKey}]:`, error); }
     },
 
-    /**
-     * Fetches all achievements earned by a specific user.
-     * @param {string} userId The ID of the user.
-     * @returns {Promise<Array<object>>} A promise that resolves to an array of achievement objects.
-     */
     async fetchUserAchievements(userId) {
-        const { data, error } = await this.db
-            .from('user_achievements')
-            .select(`
-                earned_at,
-                achievements (
-                    name,
-                    description,
-                    icon_url
-                )
-            `)
-            .eq('user_id', userId)
-            .order('earned_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching user achievements:', error);
-            throw new Error('获取用户成就失败。');
-        }
-        // The result is nested, so we flatten it for easier use.
-        return data.map(ua => ({
-            ...ua.achievements,
-            earned_at: ua.earned_at
-        }));
+        const { data, error } = await this.db.from('user_achievements').select(`earned_at, achievements (name, description, icon_url)`).eq('user_id', userId).order('earned_at', { ascending: false });
+        if (error) { console.error('Error fetching user achievements:', error); throw new Error('获取用户成就失败。'); }
+        return data.map(ua => ({ ...ua.achievements, earned_at: ua.earned_at }));
     },
-
-    // =================================================================
-    // NEW ACHIEVEMENT FUNCTIONS END
-    // =================================================================
 
     async signUp(email, password, fullName) {
-        const { data: authData, error: authError } = await this.db.auth.signUp({
-            email,
-            password,
-        });
+        const { data: authData, error: authError } = await this.db.auth.signUp({ email, password, });
         if (authError) throw authError;
         if (!authData.user) throw new Error('用户注册失败，无法获取新用户信息。');
-
         const userId = authData.user.id;
-
-        const { error: scoreError } = await this.db
-            .from('scores')
-            .insert({ user_id: userId, username: fullName });
-
-        if (scoreError) {
-            console.error(`User and profile created, but failed to create score entry: ${scoreError.message}`);
-            throw new Error('用户分数记录创建失败，请联系管理员。');
-        }
-
+        const { error: scoreError } = await this.db.from('scores').insert({ user_id: userId, username: fullName });
+        if (scoreError) { console.error(`User and profile created, but failed to create score entry: ${scoreError.message}`); throw new Error('用户分数记录创建失败，请联系管理员。'); }
         return authData;
     },
 
     async updateUsername(userId, newUsername) {
-        const { data, error } = await this.db
-            .from('scores')
-            .update({ username: newUsername })
-            .eq('user_id', userId)
-            .select()
-            .single();
+        const { data, error } = await this.db.from('scores').update({ username: newUsername }).eq('user_id', userId).select().single();
         if (error) {
             if (error.code === 'PGRST116') {
-                 const { data: insertData, error: insertError } = await this.db
-                    .from('scores')
-                    .insert({ user_id: userId, username: newUsername })
-                    .select()
-                    .single();
+                 const { data: insertData, error: insertError } = await this.db.from('scores').insert({ user_id: userId, username: newUsername }).select().single();
                 if (insertError) throw new Error(`创建用户名失败: ${insertError.message}`);
                 return insertData;
             }
@@ -140,87 +77,62 @@ export const ApiService = {
     async deleteBlock(id) { const { error } = await this.db.from('blocks').delete().eq('id', id); if (error) throw error; },
     
     async fetchLeaderboard() {
-        const { data, error } = await this.db
-            .rpc('get_leaderboard_with_names')
-            .limit(10);
-        if (error) {
-            console.error("Error fetching leaderboard:", error);
-            throw new Error("获取排行榜失败。");
-        }
+        const { data, error } = await this.db.rpc('get_leaderboard_with_names').limit(10);
+        if (error) { console.error("Error fetching leaderboard:", error); throw new Error("获取排行榜失败。"); }
         return data;
     },
 
     async getScoreInfo(userId) {
-        const { data, error } = await this.db
-            .from('scores')
-            .select('username, points')
-            .eq('user_id', userId)
-            .single();
-
-        if (error && error.code !== 'PGRST116') {
-            console.error("Error fetching score info:", error);
-            throw new Error('获取用户分数信息时出错。');
-        }
+        const { data, error } = await this.db.from('scores').select('username, points').eq('user_id', userId).single();
+        if (error && error.code !== 'PGRST116') { console.error("Error fetching score info:", error); throw new Error('获取用户分数信息时出错。'); }
         return data;
     },
 
     async fetchFactionLeaderboard() {
         const { data, error } = await this.db.rpc('get_faction_leaderboard');
-        if (error) {
-            console.error("Error fetching faction leaderboard:", error);
-            throw new Error("获取阵营排名失败。");
-        }
+        if (error) { console.error("Error fetching faction leaderboard:", error); throw new Error("获取阵营排名失败。"); }
         return data;
     },
     
     async fetchActiveChallenges() {
-        const { data, error } = await this.db
-            .from('challenges')
-            .select('*')
-            .eq('is_active', true);
-        if (error) throw error;
-        return data;
-    },
-
-    async fetchChallengesForAdmin() {
-        const { data, error } = await this.db
-            .from('challenges')
-            .select('*, target_category:categories(title)')
-            .order('created_at', { ascending: false });
+        const { data, error } = await this.db.from('challenges').select('*, target_category:categories(title)').eq('is_active', true);
         if (error) throw error;
         return data.map(c => ({...c, target_category_title: c.target_category?.title}));
     },
-    async upsertChallenge(d) {
-        const { error } = await this.db.from('challenges').upsert(d, { onConflict: 'id' });
-        if (error) throw error;
+    
+    // =================================================================
+    // NEW CHALLENGE PROGRESS FUNCTION
+    // =================================================================
+    async fetchFactionChallengeProgress(challengeId, faction) {
+        const { data, error } = await this.db.rpc('get_single_faction_challenge_progress', {
+            challenge_id_param: challengeId,
+            faction_param: faction
+        });
+        if (error) {
+            console.error(`Error fetching challenge progress for faction ${faction}:`, error);
+            return 0; // Return 0 as a fallback to prevent breaking the UI
+        }
+        return data;
     },
-    async deleteChallenge(id) {
-        const { error } = await this.db.from('challenges').delete().eq('id', id);
+    // =================================================================
+
+    async fetchChallengesForAdmin() {
+        const { data, error } = await this.db.from('challenges').select('*, target_category:categories(title)').order('created_at', { ascending: false });
         if (error) throw error;
+        return data.map(c => ({...c, target_category_title: c.target_category?.title}));
     },
+    async upsertChallenge(d) { const { error } = await this.db.from('challenges').upsert(d, { onConflict: 'id' }); if (error) throw error; },
+    async deleteChallenge(id) { const { error } = await this.db.from('challenges').delete().eq('id', id); if (error) throw error; },
 
     async finishChallenge(challengeId) {
         const { error } = await this.db.rpc('finish_challenge', { challenge_id_param: challengeId });
-        if (error) {
-            console.error('Error finishing challenge:', error);
-            throw new Error(`挑战结算失败: ${error.message}`);
-        }
+        if (error) { console.error('Error finishing challenge:', error); throw new Error(`挑战结算失败: ${error.message}`); }
     },
 
     async getProfile(userId) {
-        const { data, error } = await this.db
-            .from('profiles')
-            .select('role, faction')
-            .eq('id', userId)
-            .single();
-        
-        if (error && error.code === 'PGRST116') {
-            return null;
-        }
-        if (error) {
-            console.error("Error fetching profile:", error);
-            throw new Error('获取用户档案时出错。');
-        }
+        const { data, error } = await this.db.from('profiles').select('role, faction').eq('id', userId).single();
+        if (error && error.code === 'PGRST116') { return null; }
+        if (error) { console.error("Error fetching profile:", error); throw new Error('获取用户档案时出错。'); }
         return data;
     },
 
@@ -232,28 +144,15 @@ export const ApiService = {
     },
 
     async updateProfile(userId, profileData) {
-        const { data, error } = await this.db
-            .from('profiles')
-            .update({ ...profileData, updated_at: new Date() })
-            .eq('id', userId)
-            .select('*')
-            .single();
+        const { data, error } = await this.db.from('profiles').update({ ...profileData, updated_at: new Date() }).eq('id', userId).select('*').single();
         if (error) throw new Error(`Failed to update profile: ${error.message}`);
         return data;
     },
 
     async getUserProgress(userId) {
         const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId).single();
-        
-        if (error && error.code !== 'PGRST116') {
-            console.error('Error fetching user progress:', error);
-            throw new Error('获取用户进度失败');
-        }
-
-        return {
-            completed: data ? data.completed_blocks || [] : [],
-            awarded: data ? data.awarded_points_blocks || [] : []
-        };
+        if (error && error.code !== 'PGRST116') { console.error('Error fetching user progress:', error); throw new Error('获取用户进度失败'); }
+        return { completed: data ? data.completed_blocks || [] : [], awarded: data ? data.awarded_points_blocks || [] : [] };
     },
 
     async saveUserProgress(userId, progressData) {
@@ -266,15 +165,8 @@ export const ApiService = {
     },
 
     async addPoints(userId, points) {
-        const { error } = await this.db.rpc('upsert_score', {
-            user_id_input: userId,
-            points_to_add: points
-        });
-
-        if (error) {
-            console.error("RPC 'upsert_score' failed:", error);
-            throw new Error(`积分更新失败: ${error.message}`);
-        }
+        const { error } = await this.db.rpc('upsert_score', { user_id_input: userId, points_to_add: points });
+        if (error) { console.error("RPC 'upsert_score' failed:", error); throw new Error(`积分更新失败: ${error.message}`); }
     },
 
     async signIn(email, password) {
@@ -284,8 +176,6 @@ export const ApiService = {
     },
     async signOut() { 
         const { error } = await this.db.auth.signOut();
-        if (error) {
-            console.error("Sign out error", error);
-        }
+        if (error) { console.error("Sign out error", error); }
     },
 };
