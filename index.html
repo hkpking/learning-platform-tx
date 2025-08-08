@@ -112,15 +112,19 @@
                                 <div id="main-content-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
                                     <!-- Main Content Column -->
                                     <div class="lg:col-span-2 space-y-8">
+                                        
+                                        <!-- ==================== UPDATED PART START ==================== -->
+                                        <!-- This section is now a clean container for dynamic challenge cards -->
+                                        <div id="challenge-section" class="space-y-6 hidden">
+                                            <h2 class="hub-title">部门挑战</h2>
+                                            <div id="active-challenge-container" class="space-y-4">
+                                                <!-- Challenge cards will be rendered here by JS -->
+                                            </div>
+                                        </div>
+                                        <!-- ===================== UPDATED PART END ===================== -->
+
                                         <div id="course-list-container" class="space-y-6">
                                             <!-- Course cards will be rendered here by JS -->
-                                        </div>
-
-                                        <div id="challenge-section" class="hub-card p-8 hidden">
-                                            <h2 class="hub-title">部门挑战</h2>
-                                            <div id="active-challenge-container">
-                                                <!-- Challenge cards will be rendered by JS -->
-                                            </div>
                                         </div>
                                     </div>
 
@@ -159,7 +163,6 @@
                     <h2 id="form-title" class="text-3xl font-bold text-center text-white mb-8">用户登录</h2>
                     <form id="auth-form">
                         <div class="space-y-6">
-                            <!-- **THIS IS THE NEW/UPDATED PART** -->
                             <div id="full-name-input-container" class="hidden">
                                 <input type="text" id="full-name-input" placeholder="您的姓名" class="input-field w-full p-3 rounded-lg">
                             </div>
@@ -184,11 +187,8 @@
                         <p class="text-gray-400 mt-4 text-lg">选择一个篇章，开启你的征程！</p>
                     </header>
                     
-                    <!-- ==================== NEW FEATURE START ==================== -->
                     <div id="main-continue-learning-container" class="mb-12">
-                        <!-- The "Continue Learning" card will be rendered here by JS -->
                     </div>
-                    <!-- ===================== NEW FEATURE END ===================== -->
 
                     <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
                 </div>
