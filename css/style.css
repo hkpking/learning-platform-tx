@@ -200,3 +200,40 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
     background-color: #cbd5e1;
 }
 
+#hub-background-visual {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 150%;
+    height: 150%;
+    background: radial-gradient(circle, rgba(30, 64, 175, 0.1) 0%, rgba(17, 24, 39, 0) 60%);
+    transform: translate(-50%, -50%);
+    animation: spin 80s linear infinite;
+    z-index: 0;
+}
+
+@keyframes spin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+#continue-learning-card {
+    background: linear-gradient(to right, rgba(30, 64, 175, 0.5), rgba(17, 24, 39, 0.5));
+    border: 1px solid #3b82f6;
+    border-radius: 12px;
+}
+
+#continue-learning-btn {
+    background: #3b82f6;
+}
+
+.course-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+}
+
+.course-card:hover {
+    transform: scale(1.02);
+    border-color: #3b82f6;
+}
