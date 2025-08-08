@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 2.5.0 - Modified login flow to redirect directly to the learning platform.
+ * @version 2.6.0 - Added "Continue Learning" feature.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -263,16 +263,15 @@ const App = {
             AppState.learningMap.categories = categories;
             this.flattenLearningStructure();
 
-            // ==================== MODIFICATION START ====================
-            // Instead of showing the landing page hub, directly switch to the main learning interface.
             UI.switchTopLevelView('main');
             
-            // And immediately display the first view of the learning platform.
+            // ==================== NEW FEATURE START ====================
+            // Render the continue learning card before showing the main category view.
+            this.renderContinueLearningCard();
+            // ===================== NEW FEATURE END =====================
+
             CourseView.showCategoryView();
-            
-            // Also update the leaderboard, which is visible in the main app view.
             CourseView.updateLeaderboard();
-            // ===================== MODIFICATION END =====================
 
             // Update UI elements in the main header.
             UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !AppState.profile || AppState.profile.role !== 'admin');
@@ -281,21 +280,72 @@ const App = {
             
             // Set up real-time updates for scores.
             ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
-                // Only update the leaderboard if the user is in the main view.
                 if (AppState.current.topLevelView === 'main') {
                     CourseView.updateLeaderboard();
                 }
-                // We can still update the landing page data in the background for consistency.
                 this.updateLandingPageLeaderboards();
             }).subscribe();
 
         } catch (error) {
             console.error("Failed to load main app data:", error);
             UI.showNotification(`加载数据失败: ${error.message}`, 'error');
-            // Fallback to the landing view if anything goes wrong.
             UI.switchTopLevelView('landing');
         }
     },
+    
+    // ==================== NEW FEATURE START ====================
+    /**
+     * Renders a "Continue Learning" card if a last-viewed block is found.
+     */
+    renderContinueLearningCard() {
+        const container = document.getElementById('main-continue-learning-container');
+        if (!container) return;
+
+        const lastViewedBlockId = localStorage.getItem('lastViewedBlockId');
+        if (!lastViewedBlockId) {
+            container.innerHTML = ''; // Clear if no last viewed block
+            return;
+        }
+
+        const block = AppState.learningMap.flatStructure.find(b => b.id === lastViewedBlockId);
+        if (!block) {
+            container.innerHTML = '';
+            return;
+        }
+        
+        // Don't show the card if the last viewed block is already completed.
+        if (AppState.userProgress.completedBlocks.has(block.id)) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const chapter = AppState.learningMap.categories
+            .flatMap(c => c.chapters)
+            .find(ch => ch.id === block.chapterId);
+
+        const cardTitle = chapter ? `${chapter.title} - ${block.title}` : block.title;
+
+        container.innerHTML = `
+            <div class="continue-learning-card">
+                <div>
+                    <p class="text-gray-400 text-sm">继续上次的征途</p>
+                    <h3 class="text-xl font-bold text-sky-300 mt-1">${cardTitle}</h3>
+                </div>
+                <button id="main-continue-btn" class="btn bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">
+                    马上开始 &rarr;
+                </button>
+            </div>
+        `;
+
+        document.getElementById('main-continue-btn').addEventListener('click', () => {
+            // Navigate directly to the last viewed block
+            AppState.current.categoryId = block.categoryId;
+            CourseView.selectChapter(block.chapterId);
+            // Use a small timeout to ensure the view transition is complete before selecting the block
+            setTimeout(() => CourseView.selectBlock(block.id), 50);
+        });
+    },
+    // ===================== NEW FEATURE END =====================
 
     setupSmartNavigation() {
         const smartNavContainer = document.getElementById('smart-nav-container');
