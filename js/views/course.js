@@ -2,6 +2,7 @@ import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { ApiService } from '../services/api.js';
 import { ComponentFactory } from '../components/factory.js';
+
 export const CourseView = {
     async showCategoryView() {
         UI.switchCourseView('category-selection');
@@ -9,6 +10,9 @@ export const CourseView = {
         const categories = AppState.learningMap.categories;
         grid.innerHTML = '';
         if (!categories || categories.length === 0) { UI.renderEmpty(grid, '暂无课程篇章，敬请期待！'); return; }
+        
+        // The App controller will handle rendering the continue card.
+        // We just render the main category list here.
         categories.forEach(c => grid.appendChild(ComponentFactory.createCategoryCard(c, !this.isCategoryUnlocked(c.id))));
     },
     isCategoryUnlocked(categoryId) {
@@ -81,6 +85,15 @@ export const CourseView = {
     selectBlock(blockId) {
         this.closeImmersiveViewer();
         AppState.current.blockId = blockId;
+
+        // ==================== NEW FEATURE START ====================
+        // Save the last viewed block ID to localStorage.
+        // This is a simple way to persist the last location without database changes.
+        if (window.localStorage) {
+            localStorage.setItem('lastViewedBlockId', blockId);
+        }
+        // ===================== NEW FEATURE END =====================
+
         UI.elements.mainApp.sidebarNav.querySelectorAll("a.block-item").forEach(item => item.classList.toggle("active", item.dataset.blockId == blockId));
         this.renderBlockContent(blockId);
     },
