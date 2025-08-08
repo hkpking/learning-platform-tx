@@ -278,4 +278,12 @@ const App = {
     },
 };
 
-window.onload = () => App.init();
+window.onload = () => {
+    try {
+        ApiService.initialize();
+        App.init();
+    } catch (error) {
+        console.error("Failed to initialize application:", error);
+        document.body.innerHTML = `<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h1>Application Failed to Start</h1><p>${error.message}</p></div>`;
+    }
+};

@@ -3,10 +3,15 @@
  * @description Encapsulates all interactions with the Supabase backend.
  * [v2.3.2] Adds API call for finishing challenges.
  */
-const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
-
 export const ApiService = {
-    db: supabase.createClient(SUPABASE_URL, SUPABASE_KEY),
+    db: null,
+    initialize() {
+        const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
+        if (!SUPABASE_URL || !SUPABASE_KEY) {
+            throw new Error("Supabase URL or Key is missing. Make sure config.js is loaded correctly.");
+        }
+        this.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    },
 
     async fetchLearningMap() {
         const { data, error } = await this.db.from("categories").select("*, chapters(*, sections(*, blocks(*)))").order("order").order("order", { foreignTable: "chapters" }).order("order", { foreignTable: "chapters.sections" }).order("order", { foreignTable: "chapters.sections.blocks" });
