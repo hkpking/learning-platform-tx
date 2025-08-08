@@ -197,12 +197,22 @@ const App = {
 
     async handleLogin(user) {
         if (AppState.user && AppState.user.id === user.id) return;
-        resetUserProgressState(); 
+        resetUserProgressState();
         AppState.user = user;
         try {
-            const profile = await ApiService.getProfile(user.id);
-            AppState.profile = profile || { role: 'user', faction: null, full_name: null };
-            
+            // Fetch profile and score info in parallel
+            const [profile, scoreInfo] = await Promise.all([
+                ApiService.getProfile(user.id),
+                ApiService.getScoreInfo(user.id)
+            ]);
+
+            // Combine profile and score info into a single state object
+            AppState.profile = {
+                ...(profile || { role: 'user', faction: null }),
+                username: scoreInfo ? scoreInfo.username : null,
+                points: scoreInfo ? scoreInfo.points : 0
+            };
+
             if (!AppState.profile.faction) {
                 this.showFactionSelection();
             } else {
@@ -260,7 +270,7 @@ const App = {
             this.updateLandingPageLeaderboards(); // Refresh leaderboards with user context
 
             UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !AppState.profile || AppState.profile.role !== 'admin');
-            const displayName = AppState.profile.full_name || AppState.user.email.split('@')[0];
+            const displayName = AppState.profile.username || AppState.user.email.split('@')[0];
             UI.elements.mainApp.userGreeting.textContent = `欢迎, ${displayName}`;
             
             // Set up real-time updates
@@ -287,7 +297,7 @@ const App = {
             const continueLearningBtn = document.getElementById('continue-learning-btn');
             const continueLearningTitle = document.getElementById('continue-learning-title');
             
-            smartNavUsername.textContent = AppState.profile.full_name || AppState.user.email.split('@')[0];
+            smartNavUsername.textContent = AppState.profile.username || AppState.user.email.split('@')[0];
             smartNavContainer.classList.remove('hidden');
             mainHubTitle.classList.add('hidden');
 
