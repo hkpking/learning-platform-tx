@@ -9,28 +9,11 @@ import { ApiService } from './services/api.js';
 import { AuthView } from './views/auth.js';
 import { CourseView } from './views/course.js';
 import { AdminView } from './views/admin.js';
-
-// [NEW] Centralized faction information for scalability
-const FACTION_MAP = {
-    it_dept: { name: 'IT技术部', color: 'blue' },
-    im_dept: { name: '信息管理部', color: 'cyan' },
-    pmo_dept: { name: '项目综合管理部', color: 'indigo' },
-    dm_dept: { name: '数据管理部', color: 'emerald' },
-    strategy_dept: { name: '战略管理部', color: 'amber' },
-    logistics_dept: { name: '物流IT部', color: 'orange' },
-    aoc_dept: { name: '项目AOC', color: 'rose' },
-    '3333_dept': { name: '3333', color: 'purple' },
-    // Fallback for old data or any unknown factions
-    tianming: { name: 'IT技术部', color: 'blue' }, // For smooth transition
-    nishang: { name: '项目综合管理部', color: 'indigo' }, // For smooth transition
-    default: { name: '未知部门', color: 'gray' }
-};
-
-const getFactionInfo = (factionId) => {
-    return FACTION_MAP[factionId] || FACTION_MAP.default;
-};
+import { ProfileView } from './views/profile.js';
+import { getFactionInfo } from './constants.js';
 
 const App = {
+    _latestLeaderboardRequest: 0,
     init() {
         this.bindEvents();
         this.initLandingPage();
@@ -52,6 +35,8 @@ const App = {
         UI.elements.auth.form.addEventListener('submit', (e) => AuthView.handleAuthSubmit(e));
         UI.elements.auth.switchBtn.addEventListener('click', (e) => AuthView.switchAuthMode(e));
         UI.elements.mainApp.logoutBtn.addEventListener('click', () => ApiService.signOut());
+        UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView());
+        UI.elements.profile.backToMainAppBtn.addEventListener('click', () => UI.switchTopLevelView('main'));
         UI.elements.mainApp.restartBtn.addEventListener('click', () => this.handleRestartRequest());
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
         UI.elements.mainApp.backToCategoriesBtn.addEventListener('click', () => CourseView.showCategoryView());
@@ -121,9 +106,10 @@ const App = {
     },
     
     async updateLandingPageLeaderboards() {
+        const requestId = ++this._latestLeaderboardRequest;
         const { personalBoard, factionBoard } = UI.elements.landing;
-        UI.renderLoading(personalBoard);
-        UI.renderLoading(factionBoard);
+        UI.renderLoading(personalBoard, 'leaderboard');
+        UI.renderLoading(factionBoard, 'faction-leaderboard');
         
         const challengeContainer = document.getElementById('active-challenge-container');
         const challengeSection = document.getElementById('challenge-section');
@@ -149,6 +135,11 @@ const App = {
                 ApiService.fetchLeaderboard(),
                 ApiService.fetchFactionLeaderboard()
             ]);
+
+            if (requestId !== this._latestLeaderboardRequest) {
+                return;
+            }
+
             AppState.leaderboard = personalData;
             AppState.factionLeaderboard = factionData;
 

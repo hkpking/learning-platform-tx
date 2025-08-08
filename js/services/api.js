@@ -3,8 +3,7 @@
  * @description Encapsulates all interactions with the Supabase backend.
  * [v2.3.2] Adds API call for finishing challenges.
  */
-const SUPABASE_URL = 'https://mfxlcdsrnzxjslrfaawz.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGxjZHNybnp4anNscmZhYXd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQyODMsImV4cCI6MjA2NzI2MDI4M30.wTuqqQkOP2_ZwfUU_xM0-X9YjkM39-kewjN41Pxa_wA';
+const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
 
 export const ApiService = {
     db: supabase.createClient(SUPABASE_URL, SUPABASE_KEY),
@@ -119,6 +118,19 @@ export const ApiService = {
     async resetUserProgress() {
         const { error } = await this.db.rpc('reset_user_progress');
         if (error) throw new Error('重置进度失败');
+    },
+
+    async getUserScore(userId) {
+        const { data, error } = await this.db
+            .from('scores')
+            .select('points')
+            .eq('user_id', userId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') {
+            throw error;
+        }
+        return data;
     },
 
     async addPoints(userId, points) {

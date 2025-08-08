@@ -48,27 +48,37 @@ export const ComponentFactory = {
                 quiz.querySelector("#submit-quiz-btn").disabled = false;
             });
         });
-        quiz.querySelector("#submit-quiz-btn").addEventListener("click", async () => {
+        quiz.querySelector("#submit-quiz-btn").addEventListener("click", () => {
             if (!selectedOpt) return;
+
             quiz.querySelectorAll(".quiz-option").forEach(o => o.style.pointerEvents = 'none');
             quiz.querySelector("#submit-quiz-btn").disabled = true;
             const selectedIdx = parseInt(selectedOpt.dataset.index);
+
             if (selectedIdx === correctIdx) {
-                selectedOpt.classList.remove("selected"); selectedOpt.classList.add("correct");
+                selectedOpt.classList.remove("selected");
+                selectedOpt.classList.add("correct");
+
                 if (!AppState.userProgress.awardedPointsBlocks.has(block.id)) {
-                    try {
-                        UI.showNotification("回答正确! 获得 10 学分!", "success");
-                        await ApiService.addPoints(AppState.user.id, 10);
-                        AppState.userProgress.awardedPointsBlocks.add(block.id);
+                    UI.showNotification("回答正确! 获得 10 学分!", "success");
+                    AppState.userProgress.awardedPointsBlocks.add(block.id);
+                    CourseView.updateLeaderboard();
+
+                    ApiService.addPoints(AppState.user.id, 10).catch(e => {
+                        UI.showNotification(`积分同步失败: ${e.message}`, "error");
+                        AppState.userProgress.awardedPointsBlocks.delete(block.id);
                         CourseView.updateLeaderboard();
-                    } catch (e) { UI.showNotification(e.message, "error"); }
-                } else { UI.showNotification("回答正确! (积分已获得)", "success"); }
-                await CourseView.completeBlock(block.id);
+                    });
+                } else {
+                    UI.showNotification("回答正确! (积分已获得)", "success");
+                }
+                CourseView.completeBlock(block.id);
             } else {
-                selectedOpt.classList.remove("selected"); selectedOpt.classList.add("incorrect");
+                selectedOpt.classList.remove("selected");
+                selectedOpt.classList.add("incorrect");
                 quiz.querySelector(`[data-index='${correctIdx}']`).classList.add("correct");
                 UI.showNotification("回答错误, 再接再厉!", "error");
-                await CourseView.completeBlock(block.id);
+                CourseView.completeBlock(block.id);
             }
         });
         return quiz;
