@@ -12,11 +12,14 @@ export const ProfileView = {
         try {
             const userId = AppState.user.id;
             
-            const [profile, scoreData] = await Promise.all([
+            // Fetch all profile-related data in parallel, including achievements
+            const [profile, scoreData, achievements] = await Promise.all([
                 ApiService.getProfile(userId),
-                ApiService.getScoreInfo(userId)
+                ApiService.getScoreInfo(userId),
+                ApiService.fetchUserAchievements(userId) // NEW: Fetch achievements
             ]);
 
+            // Update AppState
             AppState.profile = { 
                 ...AppState.profile, 
                 ...profile, 
@@ -25,14 +28,15 @@ export const ProfileView = {
             };
             
             const points = AppState.profile.points || 0;
-
             const totalBlocks = AppState.learningMap.flatStructure.length;
             const completedBlocks = AppState.userProgress.completedBlocks.size;
             const progressPercentage = totalBlocks > 0 ? ((completedBlocks / totalBlocks) * 100).toFixed(0) : 0;
 
+            // Updated HTML structure to include a placeholder for the "Achievement Hall"
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                     <div class="md:col-span-1 text-center" id="profile-identity">
+                        <!-- Identity section will be rendered here -->
                     </div>
                     <div class="md:col-span-2">
                         <h3 class="text-xl font-bold text-gray-300 mb-6">学习统计</h3>
@@ -56,14 +60,46 @@ export const ProfileView = {
                         </div>
                     </div>
                 </div>
+                <!-- NEW: Achievements Section -->
+                <div id="achievements-hall" class="mt-12 pt-8 border-t border-slate-700/50">
+                    <h3 class="text-2xl font-bold text-center text-amber-300 mb-8 font-calligraphy">成就殿堂</h3>
+                    <div id="achievements-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        <!-- Achievements will be rendered here by the new function -->
+                    </div>
+                </div>
             `;
 
+            // Render the separate parts of the profile
             this.renderIdentitySection();
+            this.renderAchievements(achievements); // NEW: Call the render function
 
         } catch (error) {
             console.error("Failed to load profile data:", error);
             UI.renderError(container, '无法加载个人主页数据。');
         }
+    },
+    
+    /**
+     * NEW: Renders the grid of earned achievements.
+     * @param {Array<object>} achievements - The list of achievements fetched from the API.
+     */
+    renderAchievements(achievements) {
+        const grid = document.getElementById('achievements-grid');
+        if (!grid) return;
+
+        if (!achievements || achievements.length === 0) {
+            grid.innerHTML = `<p class="col-span-full text-center text-gray-500">暂未获得任何成就，继续努力吧！</p>`;
+            return;
+        }
+
+        grid.innerHTML = achievements.map(ach => `
+            <div class="text-center group" title="${ach.description}\n获得于: ${new Date(ach.earned_at).toLocaleDateString()}">
+                <div class="w-24 h-24 mx-auto bg-slate-800/50 rounded-full flex items-center justify-center p-4 transition-all duration-300 group-hover:scale-110 group-hover:bg-amber-500/20 border-2 border-slate-700 group-hover:border-amber-400">
+                    <img src="${ach.icon_url}" alt="${ach.name}" class="w-full h-full object-contain">
+                </div>
+                <p class="mt-3 font-semibold text-white group-hover:text-amber-300 transition-colors">${ach.name}</p>
+            </div>
+        `).join('');
     },
 
     renderIdentitySection() {
@@ -76,7 +112,6 @@ export const ProfileView = {
         const avatarChar = (profile.username || emailPrefix).charAt(0).toUpperCase();
 
         let nameHtml;
-        // Check if a username exists. If not, show the form to add one.
         if (profile.username) {
             nameHtml = `
                 <h2 class="text-2xl font-bold text-white">${profile.username}</h2>
@@ -102,7 +137,6 @@ export const ProfileView = {
             <p class="text-lg text-${factionInfo.color}-400 font-semibold mt-2">${factionInfo.name}</p>
         `;
 
-        // Bind events to the newly created elements
         this.bindIdentityEvents();
     },
 
@@ -117,12 +151,9 @@ export const ProfileView = {
 
                 try {
                     const updatedScoreInfo = await ApiService.updateUsername(AppState.user.id, newName);
-                    // Update the global state with the new username
                     AppState.profile.username = updatedScoreInfo.username;
                     UI.showNotification('姓名更新成功！', 'success');
-                    // Re-render the section to show the new name instead of the form
                     this.renderIdentitySection();
-                    // Also update the main greeting in the header
                     UI.elements.mainApp.userGreeting.textContent = `欢迎, ${updatedScoreInfo.username}`;
                 } catch (error) {
                     UI.showNotification(error.message, 'error');
