@@ -1,11 +1,10 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.4.1] Refactored initialization to prevent 'db is null' errors.
+ * [v2.4.2] Added updateUsername function.
  */
 
 // Initialize the Supabase client immediately at the module level.
-// This ensures 'db' is available for all subsequent function calls.
 const { createClient } = supabase;
 const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
 
@@ -18,12 +17,33 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 export const ApiService = {
-    // Expose the initialized client instance
     db: db,
 
-    // The initialize method is no longer strictly necessary but kept for potential future setup tasks.
     initialize() {
         console.log("ApiService initialized with Supabase client.");
+    },
+
+    async updateUsername(userId, newUsername) {
+        const { data, error } = await this.db
+            .from('scores')
+            .update({ username: newUsername })
+            .eq('user_id', userId)
+            .select()
+            .single();
+        if (error) {
+            // Handle case where user might not have a score record yet
+            if (error.code === 'PGRST116') {
+                 const { data: insertData, error: insertError } = await this.db
+                    .from('scores')
+                    .insert({ user_id: userId, username: newUsername })
+                    .select()
+                    .single();
+                if (insertError) throw new Error(`创建用户名失败: ${insertError.message}`);
+                return insertData;
+            }
+            throw new Error(`更新用户名失败: ${error.message}`);
+        }
+        return data;
     },
 
     async fetchLearningMap() {
@@ -120,7 +140,6 @@ export const ApiService = {
             .eq('id', userId)
             .single();
         
-        // This handles the case where a profile might not exist for a newly signed-up user yet.
         if (error && error.code === 'PGRST116') {
             return null;
         }
@@ -152,7 +171,7 @@ export const ApiService = {
     async getUserProgress(userId) {
         const { data, error } = await this.db.from('user_progress').select('completed_blocks, awarded_points_blocks').eq('user_id', userId).single();
         
-        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is fine
+        if (error && error.code !== 'PGRST116') {
             console.error('Error fetching user progress:', error);
             throw new Error('获取用户进度失败');
         }
@@ -196,7 +215,7 @@ export const ApiService = {
 
         const { error: profileError } = await this.db
             .from('profiles')
-            .insert({ id: userId, role: 'user' }); // Ensure role is set on creation
+            .insert({ id: userId, role: 'user' });
 
         if (profileError) {
             console.error(`User created in auth, but failed to create profile: ${profileError.message}`);
