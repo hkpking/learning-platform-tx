@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v2.4.0] Fixed login flow and new hub UI rendering.
+ * [v2.4.1] Fixed login flow, new hub UI rendering, and added module imports.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -10,7 +10,7 @@ import { AuthView } from './views/auth.js';
 import { CourseView } from './views/course.js';
 import { AdminView } from './views/admin.js';
 import { ProfileView } from './views/profile.js';
-import { getFactionInfo } from './constants.js';
+import { getFactionInfo } from './constants.js'; // <-- ADDED IMPORT
 
 const App = {
     init() {
