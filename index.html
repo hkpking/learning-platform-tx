@@ -178,7 +178,20 @@
                 <div class="container mx-auto px-4 sm:px-6 lg:px-8"><div class="flex items-center justify-between h-16"><div class="flex items-center"><span class="font-bold text-xl text-white">🚀 流程管理在线学习平台</span></div><div id="user-info" class="flex items-center space-x-4 text-white"><span id="user-greeting" class="text-sm font-medium"></span><button id="profile-view-btn" class="text-sm font-medium text-sky-400 hover:text-sky-300 transition-colors" title="查看个人主页">个人主页</button><button id="admin-view-btn" class="hidden text-sm font-bold bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-full btn" title="进入管理后台">管理后台</button><button id="restart-btn" class="text-sm font-medium text-yellow-400 hover:text-yellow-300 transition-colors" title="重新学习所有课程">重新学习</button><button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded-full btn" title="退出登录">退出</button></div></div></div>
             </header>
             <div id="learning-content-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex-grow">
-                <div id="category-selection-view" class="view"><header class="text-center mb-12"><h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400">学习地图</h1><p class="text-gray-400 mt-4 text-lg">选择一个篇章，开启你的征程！</p></header><div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div></div>
+                <div id="category-selection-view" class="view">
+                    <header class="text-center mb-12">
+                        <h1 class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-sky-400">学习地图</h1>
+                        <p class="text-gray-400 mt-4 text-lg">选择一个篇章，开启你的征程！</p>
+                    </header>
+                    
+                    <!-- ==================== NEW FEATURE START ==================== -->
+                    <div id="main-continue-learning-container" class="mb-12">
+                        <!-- The "Continue Learning" card will be rendered here by JS -->
+                    </div>
+                    <!-- ===================== NEW FEATURE END ===================== -->
+
+                    <div id="categories-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div>
+                </div>
                 <div id="chapter-selection-view" class="view"><header class="text-center mb-16 relative"><button id="back-to-categories-btn" class="absolute top-1/2 -translate-y-1/2 left-0 p-2 rounded-full hover:bg-gray-700/50 transition-colors" title="返回学习地图"><svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg></button><h1 id="chapter-view-title" class="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-violet-500"></h1><p id="chapter-view-desc" class="text-gray-400 mt-4 text-lg"></p></header><div id="chapters-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"></div></div>
                 <div id="chapter-detail-view" class="view"><div class="module-container rounded-xl overflow-hidden flex flex-col md:flex-row" style="height: 75vh;"><aside id="sidebar" class="w-full md:w-80 bg-slate-900/80 text-gray-300 flex flex-col flex-shrink-0 border-r border-slate-700/50"><div id="sidebar-header" class="p-6 border-b border-slate-700/50"></div><nav class="flex-1 overflow-y-auto p-2"><ul id="sidebar-nav-list" class="space-y-1"></ul></nav><div class="p-4 mt-auto"><button id="back-to-chapters-btn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg btn">返回章节列表</button></div></aside><main id="content-area" class="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto"></main></div></div>
             </div>
