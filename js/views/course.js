@@ -11,8 +11,6 @@ export const CourseView = {
         grid.innerHTML = '';
         if (!categories || categories.length === 0) { UI.renderEmpty(grid, '暂无课程篇章，敬请期待！'); return; }
         
-        // The App controller will handle rendering the continue card.
-        // We just render the main category list here.
         categories.forEach(c => grid.appendChild(ComponentFactory.createCategoryCard(c, !this.isCategoryUnlocked(c.id))));
     },
     isCategoryUnlocked(categoryId) {
@@ -85,15 +83,9 @@ export const CourseView = {
     selectBlock(blockId) {
         this.closeImmersiveViewer();
         AppState.current.blockId = blockId;
-
-        // ==================== NEW FEATURE START ====================
-        // Save the last viewed block ID to localStorage.
-        // This is a simple way to persist the last location without database changes.
         if (window.localStorage) {
             localStorage.setItem('lastViewedBlockId', blockId);
         }
-        // ===================== NEW FEATURE END =====================
-
         UI.elements.mainApp.sidebarNav.querySelectorAll("a.block-item").forEach(item => item.classList.toggle("active", item.dataset.blockId == blockId));
         this.renderBlockContent(blockId);
     },
@@ -128,13 +120,55 @@ export const CourseView = {
         const icon = type === 'video' ? `<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm8 6l-4 3V7l4 3z"></path></svg>` : `<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>`;
         return `<div onclick="CourseView.openImmersiveViewer('${type}', '${block[`${type}_url`]}', '${block.title.replace(/'/g, "\\'")}')" class="relative rounded-lg overflow-hidden cursor-pointer group mb-6"><div class="absolute inset-0 bg-black/50 group-hover:bg-black/70 transition-colors flex items-center justify-center"><div class="text-center"><div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">${icon}</div><h4 class="text-white text-xl font-bold">${block.title}</h4><p class="text-gray-300">${type === 'video' ? '点击播放视频' : '点击打开文档'}</p></div></div><img src="https://placehold.co/800x450/0f172a/38bdf8?text=${encodeURIComponent(block.title)}" alt="${block.title}" class="w-full h-auto"></div>`;
     },
+    
     async completeBlock(blockId) {
+        // Prevent re-completing
+        if (AppState.userProgress.completedBlocks.has(blockId)) return;
+
+        const wasFirstCompletion = AppState.userProgress.completedBlocks.size === 0;
         AppState.userProgress.completedBlocks.add(blockId);
+        
         try {
             await ApiService.saveUserProgress(AppState.user.id, { completed: Array.from(AppState.userProgress.completedBlocks), awarded: Array.from(AppState.userProgress.awardedPointsBlocks) });
-            this.showDetailView();
-        } catch (e) { UI.showNotification(e.message, "error"); AppState.userProgress.completedBlocks.delete(blockId); }
+            
+            // =================================================================
+            // NEW: Check for achievements after saving progress
+            // =================================================================
+            await this.checkAndAwardAchievements(blockId, wasFirstCompletion);
+
+            this.showDetailView(); // Refresh the view
+        } catch (e) { 
+            UI.showNotification(e.message, "error"); 
+            // Rollback state if save fails
+            AppState.userProgress.completedBlocks.delete(blockId); 
+        }
     },
+
+    // =================================================================
+    // NEW: Achievement checking logic
+    // =================================================================
+    async checkAndAwardAchievements(completedBlockId, wasFirstCompletion) {
+        // --- 1. Check for "Complete First Block" ---
+        if (wasFirstCompletion) {
+            await ApiService.awardAchievement('COMPLETE_FIRST_BLOCK');
+            UI.showNotification("获得成就：初窥门径！", "success");
+        }
+
+        // --- 2. Check for "Complete First Chapter" ---
+        const block = AppState.learningMap.flatStructure.find(b => b.id === completedBlockId);
+        if (!block) return;
+
+        const chapterId = block.chapterId;
+        const allBlocksInChapter = AppState.learningMap.flatStructure.filter(b => b.chapterId === chapterId);
+        const allChapterBlocksCompleted = allBlocksInChapter.every(b => AppState.userProgress.completedBlocks.has(b.id));
+        
+        if (allChapterBlocksCompleted) {
+            // We award it, the backend function will prevent duplicates.
+            await ApiService.awardAchievement('COMPLETE_FIRST_CHAPTER');
+            UI.showNotification("获得成就：学有所成！", "success");
+        }
+    },
+
     isBlockUnlocked(blockId) {
         const flat = AppState.learningMap.flatStructure;
         const idx = flat.findIndex(b => b.id === blockId);
