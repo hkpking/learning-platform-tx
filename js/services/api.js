@@ -1,19 +1,29 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.4.0] Adds full_name to signUp and profile fetches.
+ * [v2.4.1] Refactored initialization to prevent 'db is null' errors.
  */
+
+// Initialize the Supabase client immediately at the module level.
+// This ensures 'db' is available for all subsequent function calls.
+const { createClient } = supabase;
+const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error("Supabase URL or Key is missing from window.APP_CONFIG.");
+    document.body.innerHTML = '<div style="color:red; text-align:center; padding: 2rem;">Supabase configuration is missing. The application cannot start.</div>';
+    throw new Error("Supabase URL or Key is missing.");
+}
+
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 export const ApiService = {
-    db: null,
+    // Expose the initialized client instance
+    db: db,
+
+    // The initialize method is no longer strictly necessary but kept for potential future setup tasks.
     initialize() {
-        const { SUPABASE_URL, SUPABASE_KEY } = window.APP_CONFIG || {};
-        if (!SUPABASE_URL || !SUPABASE_KEY) {
-            // In a real app, you might want a more robust error display
-            console.error("Supabase URL or Key is missing.");
-            document.body.innerHTML = '<div style="color:red; text-align:center; padding: 2rem;">Supabase configuration is missing. The application cannot start.</div>';
-            throw new Error("Supabase URL or Key is missing.");
-        }
-        this.db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        console.log("ApiService initialized with Supabase client.");
     },
 
     async fetchLearningMap() {
@@ -109,7 +119,11 @@ export const ApiService = {
             .select('role, faction')
             .eq('id', userId)
             .single();
-
+        
+        // This handles the case where a profile might not exist for a newly signed-up user yet.
+        if (error && error.code === 'PGRST116') {
+            return null;
+        }
         if (error) {
             console.error("Error fetching profile:", error);
             throw new Error('获取用户档案时出错。');
@@ -171,7 +185,6 @@ export const ApiService = {
     },
 
     async signUp(email, password, fullName) {
-        // Step 1: Create the user in auth.users
         const { data: authData, error: authError } = await this.db.auth.signUp({
             email,
             password,
@@ -181,26 +194,21 @@ export const ApiService = {
 
         const userId = authData.user.id;
 
-        // Step 2: Create the profile in public.profiles
         const { error: profileError } = await this.db
             .from('profiles')
-            .insert({ id: userId });
+            .insert({ id: userId, role: 'user' }); // Ensure role is set on creation
 
         if (profileError) {
             console.error(`User created in auth, but failed to create profile: ${profileError.message}`);
-            // Here you might want to add logic to delete the auth.user if the profile creation fails,
-            // but for now, we'll just throw a clear error.
             throw new Error('用户档案创建失败，请联系管理员。');
         }
 
-        // Step 3: Create the score entry in public.scores
         const { error: scoreError } = await this.db
             .from('scores')
             .insert({ user_id: userId, username: fullName });
 
         if (scoreError) {
             console.error(`Profile created, but failed to create score entry: ${scoreError.message}`);
-            // This is also a partial failure state.
             throw new Error('用户分数记录创建失败，请联系管理员。');
         }
 
