@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 2.7.0 - Added dynamic faction challenge card rendering.
+ * @version 2.8.0 - Show public challenges to logged-out users and redirect to main app on login.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -28,7 +28,7 @@ const App = {
                 this.updateLandingPageLeaderboards();
                 this.setupSmartNavigation();
                 this.renderCourseList();
-                this.renderActiveChallenges(); // Clear challenges for logged-out state
+                this.renderActiveChallenges(); // Now shows public challenges
             }
         });
     },
@@ -41,10 +41,9 @@ const App = {
         UI.elements.mainApp.logoutBtn.addEventListener('click', () => ApiService.signOut());
         UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView());
         UI.elements.profile.backToMainAppBtn.addEventListener('click', () => {
-            this.setupSmartNavigation();
-            this.renderCourseList();
-            this.renderActiveChallenges();
-            UI.switchTopLevelView('landing');
+            // This now correctly returns to the main app view, not the landing hub
+            UI.switchTopLevelView('main');
+            CourseView.showCategoryView();
         });
         UI.elements.mainApp.restartBtn.addEventListener('click', () => this.handleRestartRequest());
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
@@ -104,8 +103,10 @@ const App = {
         animatedElements.forEach(el => observer.observe(el));
         
         try {
+            // Fetch challenges on initial load for everyone
             const challenges = await ApiService.fetchActiveChallenges();
             AppState.activeChallenges = challenges;
+            this.renderActiveChallenges(); // Render for logged-out users
         } catch (error) {
             console.error('获取活跃挑战失败:', error);
         }
@@ -230,18 +231,25 @@ const App = {
             AppState.learningMap.categories = categories;
             this.flattenLearningStructure();
 
-            UI.switchTopLevelView('landing');
-            
+            // ==================== UPDATED PART START ====================
+            // Directly switch to the main application view
+            UI.switchTopLevelView('main');
+            // Render the content for the main view
             this.renderContinueLearningCard();
-            this.setupSmartNavigation();
-            this.renderCourseList();
-            this.renderActiveChallenges(); // Render dynamic challenges
-            this.updateLandingPageLeaderboards();
+            CourseView.showCategoryView();
+            // ===================== UPDATED PART END =====================
 
+            // Update header and other dynamic elements
             UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !AppState.profile || AppState.profile.role !== 'admin');
             const displayName = AppState.profile.username || AppState.user.email.split('@')[0];
             UI.elements.mainApp.userGreeting.textContent = `欢迎, ${displayName}`;
             
+            // Also update landing page content in the background for when user logs out
+            this.setupSmartNavigation();
+            this.renderCourseList();
+            this.renderActiveChallenges();
+            this.updateLandingPageLeaderboards();
+
             ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
                 if (AppState.current.topLevelView === 'main') {
                     CourseView.updateLeaderboard();
@@ -268,12 +276,12 @@ const App = {
         container.innerHTML = `<div class="continue-learning-card"><div><p class="text-gray-400 text-sm">继续上次的征途</p><h3 class="text-xl font-bold text-sky-300 mt-1">${cardTitle}</h3></div><button id="main-continue-btn" class="btn bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105">马上开始 &rarr;</button></div>`;
         document.getElementById('main-continue-btn').addEventListener('click', () => {
             AppState.current.categoryId = block.categoryId;
+            UI.switchTopLevelView('main');
             CourseView.selectChapter(block.chapterId);
             setTimeout(() => CourseView.selectBlock(block.id), 50);
         });
     },
     
-    // ==================== NEW/UPDATED FUNCTION START ====================
     async renderActiveChallenges() {
         const container = document.getElementById('active-challenge-container');
         const section = document.getElementById('challenge-section');
@@ -282,38 +290,59 @@ const App = {
         container.innerHTML = '';
         section.classList.add('hidden');
 
-        if (!AppState.user || !AppState.profile.faction || !AppState.activeChallenges || AppState.activeChallenges.length === 0) {
+        if (!AppState.activeChallenges || AppState.activeChallenges.length === 0) {
             return;
         }
 
         section.classList.remove('hidden');
         
-        for (const challenge of AppState.activeChallenges) {
-            const progress = await ApiService.fetchFactionChallengeProgress(challenge.id, AppState.profile.faction);
-            const progressPercentage = parseFloat(progress).toFixed(1);
+        // Check if user is logged in and has a faction
+        const isLoggedInWithFaction = AppState.user && AppState.profile && AppState.profile.faction;
 
+        for (const challenge of AppState.activeChallenges) {
             const card = document.createElement('div');
             card.className = 'challenge-card';
-            card.innerHTML = `
-                <h3 class="challenge-title">${challenge.title}</h3>
-                <p class="challenge-description">目标: 完成 <strong class="text-purple-300">${challenge.target_category_title || '指定'}</strong> 篇章</p>
-                <div class="mt-4">
-                    <div class="challenge-progress-bar-bg">
-                        <div class="challenge-progress-bar" style="width: ${progressPercentage}%;">${progressPercentage > 5 ? progressPercentage + '%' : ''}</div>
+            let cardContent = '';
+
+            if (isLoggedInWithFaction) {
+                // Logged-in view with progress
+                const progress = await ApiService.fetchFactionChallengeProgress(challenge.id, AppState.profile.faction);
+                const progressPercentage = parseFloat(progress).toFixed(1);
+                cardContent = `
+                    <h3 class="challenge-title">${challenge.title}</h3>
+                    <p class="challenge-description">目标: 完成 <strong class="text-purple-300">${challenge.target_category_title || '指定'}</strong> 篇章</p>
+                    <div class="mt-4">
+                        <div class="challenge-progress-bar-bg">
+                            <div class="challenge-progress-bar" style="width: ${progressPercentage}%;">${progressPercentage > 5 ? progressPercentage + '%' : ''}</div>
+                        </div>
+                        <div class="challenge-meta">
+                            <span class="challenge-reward">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                <span>${challenge.reward_points} 团队积分</span>
+                            </span>
+                            <span class="challenge-deadline">截止: ${new Date(challenge.end_date).toLocaleDateString()}</span>
+                        </div>
+                    </div>`;
+            } else {
+                // Logged-out (public) view
+                cardContent = `
+                    <h3 class="challenge-title">${challenge.title}</h3>
+                    <p class="challenge-description">目标: 完成 <strong class="text-purple-300">${challenge.target_category_title || '指定'}</strong> 篇章</p>
+                    <div class="mt-4 text-center bg-slate-800/50 p-3 rounded-md">
+                        <p class="text-sm text-sky-300">登录并加入部门以查看挑战进度！</p>
                     </div>
-                    <div class="challenge-meta">
-                        <span class="challenge-reward">
+                    <div class="challenge-meta mt-3">
+                         <span class="challenge-reward">
                             <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
                             <span>${challenge.reward_points} 团队积分</span>
                         </span>
                         <span class="challenge-deadline">截止: ${new Date(challenge.end_date).toLocaleDateString()}</span>
-                    </div>
-                </div>
-            `;
+                    </div>`;
+            }
+            card.innerHTML = cardContent;
             container.appendChild(card);
         }
     },
-    // ===================== NEW/UPDATED FUNCTION END =====================
 
     setupSmartNavigation() {
         const smartNavContainer = document.getElementById('smart-nav-container');
