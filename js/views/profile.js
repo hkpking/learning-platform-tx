@@ -1,7 +1,7 @@
 import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { ApiService } from '../services/api.js';
-import { getFactionInfo } from '../constants.js';
+import { getFactionInfo } from '../constants.js'; // <-- ADDED IMPORT
 
 export const ProfileView = {
     async showProfileView() {
@@ -11,11 +11,22 @@ export const ProfileView = {
 
         try {
             const userId = AppState.user.id;
-            const profile = await ApiService.getProfile(userId);
-            AppState.profile = profile;
+            
+            // Use a Promise.all to fetch data concurrently for better performance
+            const [profile, scoreData] = await Promise.all([
+                ApiService.getProfile(userId),
+                ApiService.getScoreInfo(userId) // <-- CORRECTED FUNCTION NAME
+            ]);
 
-            const scoreData = await ApiService.getUserScore(userId);
-            const points = scoreData ? scoreData.points : 0;
+            // Update AppState with the latest fetched data
+            AppState.profile = { 
+                ...AppState.profile, 
+                ...profile, 
+                points: scoreData ? scoreData.points : AppState.profile.points,
+                username: scoreData ? scoreData.username : AppState.profile.username
+            };
+            
+            const points = AppState.profile.points || 0;
 
             const totalBlocks = AppState.learningMap.flatStructure.length;
             const completedBlocks = AppState.userProgress.completedBlocks.size;
@@ -64,22 +75,21 @@ export const ProfileView = {
         const profile = AppState.profile;
         const factionInfo = getFactionInfo(profile.faction);
         const emailPrefix = AppState.user.email.split('@')[0];
-        const avatarChar = (profile.full_name || emailPrefix).charAt(0).toUpperCase();
+        // Use username from profile for avatar, fallback to email
+        const avatarChar = (profile.username || emailPrefix).charAt(0).toUpperCase();
 
         let nameHtml;
-        if (profile.full_name) {
+        // Use username for display
+        if (profile.username) {
             nameHtml = `
-                <h2 class="text-2xl font-bold text-white">${profile.full_name}</h2>
-                <button id="edit-name-btn" class="text-sm text-sky-400 hover:text-sky-500 transition-colors">编辑姓名</button>
+                <h2 class="text-2xl font-bold text-white">${profile.username}</h2>
+                <p class="text-sm text-gray-400">(${AppState.user.email})</p>
             `;
         } else {
-            nameHtml = `
-                <form id="profile-name-form">
-                    <p class="text-gray-400 mb-2">请完善您的姓名：</p>
-                    <input type="text" id="profile-name-input" placeholder="请输入您的姓名" class="input-field text-center w-full p-2 rounded-lg" required>
-                    <button type="submit" class="w-full mt-2 btn btn-primary text-sm py-2 px-4 rounded-lg">保存姓名</button>
-                </form>
-            `;
+            // This case should be rare if signup is enforced correctly
+             nameHtml = `
+                <h2 class="text-2xl font-bold text-white">${emailPrefix}</h2>
+             `;
         }
 
         container.innerHTML = `
@@ -91,52 +101,5 @@ export const ProfileView = {
             </div>
             <p class="text-lg text-${factionInfo.color}-400 font-semibold mt-2">${factionInfo.name}</p>
         `;
-
-        this.bindIdentityEvents();
     },
-
-    bindIdentityEvents() {
-        const editBtn = document.getElementById('edit-name-btn');
-        if (editBtn) {
-            editBtn.addEventListener('click', () => this.renderNameEditForm());
-        }
-
-        const nameForm = document.getElementById('profile-name-form');
-        if (nameForm) {
-            nameForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const input = document.getElementById('profile-name-input');
-                const newName = input.value.trim();
-                if (!newName) return;
-
-                try {
-                    const updatedProfile = await ApiService.updateProfile(AppState.user.id, { full_name: newName });
-                    AppState.profile = updatedProfile;
-                    UI.showNotification('姓名更新成功！', 'success');
-                    this.renderIdentitySection();
-                    // Also update the main greeting
-                    UI.elements.mainApp.userGreeting.textContent = `欢迎, ${updatedProfile.full_name}`;
-                } catch (error) {
-                    UI.showNotification(error.message, 'error');
-                }
-            });
-        }
-    },
-
-    renderNameEditForm() {
-        const container = document.getElementById('name-display-area');
-        if (!container) return;
-        const currentName = AppState.profile.full_name || '';
-        container.innerHTML = `
-            <form id="profile-name-form">
-                <input type="text" id="profile-name-input" value="${currentName}" class="input-field text-center w-full p-2 rounded-lg" required>
-                <div class="flex space-x-2 mt-2">
-                    <button type="button" id="cancel-edit-name-btn" class="w-full btn bg-gray-600 text-sm py-2 px-4 rounded-lg">取消</button>
-                    <button type="submit" class="w-full btn btn-primary text-sm py-2 px-4 rounded-lg">保存</button>
-                </div>
-            </form>
-        `;
-        document.getElementById('cancel-edit-name-btn').addEventListener('click', () => this.renderIdentitySection());
-        this.bindIdentityEvents();
-    }
 };
