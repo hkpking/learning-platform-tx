@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.4.2] Added updateUsername function.
+ * [v2.4.3] Fixed registration conflict by removing redundant profile insertion.
  */
 
 // Initialize the Supabase client immediately at the module level.
@@ -23,6 +23,35 @@ export const ApiService = {
         console.log("ApiService initialized with Supabase client.");
     },
 
+    async signUp(email, password, fullName) {
+        // Step 1: Create the user in auth.users.
+        // Supabase will automatically trigger the function to create a corresponding public.profiles row.
+        const { data: authData, error: authError } = await this.db.auth.signUp({
+            email,
+            password,
+        });
+        if (authError) throw authError;
+        if (!authData.user) throw new Error('用户注册失败，无法获取新用户信息。');
+
+        const userId = authData.user.id;
+
+        // **REMOVED** the manual insert into public.profiles to prevent conflict.
+
+        // Step 2: Create the score entry in public.scores, which also stores the username.
+        const { error: scoreError } = await this.db
+            .from('scores')
+            .insert({ user_id: userId, username: fullName });
+
+        if (scoreError) {
+            console.error(`User and profile created, but failed to create score entry: ${scoreError.message}`);
+            // This is a partial failure state, but the user can still log in.
+            // They can set their name later on the profile page.
+            throw new Error('用户分数记录创建失败，请联系管理员。');
+        }
+
+        return authData;
+    },
+
     async updateUsername(userId, newUsername) {
         const { data, error } = await this.db
             .from('scores')
@@ -31,7 +60,6 @@ export const ApiService = {
             .select()
             .single();
         if (error) {
-            // Handle case where user might not have a score record yet
             if (error.code === 'PGRST116') {
                  const { data: insertData, error: insertError } = await this.db
                     .from('scores')
@@ -83,7 +111,7 @@ export const ApiService = {
             .eq('user_id', userId)
             .single();
 
-        if (error && error.code !== 'PGRST116') { // Ignore error if no row is found
+        if (error && error.code !== 'PGRST116') {
             console.error("Error fetching score info:", error);
             throw new Error('获取用户分数信息时出错。');
         }
@@ -201,37 +229,6 @@ export const ApiService = {
             console.error("RPC 'upsert_score' failed:", error);
             throw new Error(`积分更新失败: ${error.message}`);
         }
-    },
-
-    async signUp(email, password, fullName) {
-        const { data: authData, error: authError } = await this.db.auth.signUp({
-            email,
-            password,
-        });
-        if (authError) throw authError;
-        if (!authData.user) throw new Error('用户注册失败，无法获取新用户信息。');
-
-        const userId = authData.user.id;
-
-        const { error: profileError } = await this.db
-            .from('profiles')
-            .insert({ id: userId, role: 'user' });
-
-        if (profileError) {
-            console.error(`User created in auth, but failed to create profile: ${profileError.message}`);
-            throw new Error('用户档案创建失败，请联系管理员。');
-        }
-
-        const { error: scoreError } = await this.db
-            .from('scores')
-            .insert({ user_id: userId, username: fullName });
-
-        if (scoreError) {
-            console.error(`Profile created, but failed to create score entry: ${scoreError.message}`);
-            throw new Error('用户分数记录创建失败，请联系管理员。');
-        }
-
-        return authData;
     },
 
     async signIn(email, password) {
