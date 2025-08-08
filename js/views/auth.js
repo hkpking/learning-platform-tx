@@ -51,10 +51,11 @@ export const AuthView = {
         try {
             if (AppState.authMode === 'login') {
                 await ApiService.signIn(email, password);
+                // The onAuthStateChange listener in app.js will handle the rest
             } else {
                 await ApiService.signUp(email, password, fullName);
                 UI.showNotification('注册成功！请使用您的邮箱登录。', 'success');
-                this.switchAuthMode();
+                this.switchAuthMode(); // Switch back to login form
             }
         } catch (error) {
             UI.showNotification(error.message, 'error');
