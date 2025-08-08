@@ -238,23 +238,76 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
     border-color: #3b82f6;
 }
 
-/* ==================== NEW FEATURE START ==================== */
-.continue-learning-card {
-    background: linear-gradient(135deg, rgba(30, 64, 175, 0.6) 0%, rgba(107, 33, 168, 0.5) 100%);
-    border: 1px solid rgba(96, 165, 250, 0.5);
-    border-radius: 0.75rem;
+/* ==================== NEW CHALLENGE CARD STYLES START ==================== */
+.challenge-card {
+    background: linear-gradient(145deg, rgba(139, 92, 246, 0.1), rgba(16, 185, 129, 0.1));
+    border: 1px solid;
+    border-image-slice: 1;
+    border-image-source: linear-gradient(to right, #8b5cf6, #10b981);
     padding: 1.5rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+}
+
+.challenge-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.challenge-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #d1d5db;
+}
+
+.challenge-description {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    margin-top: 0.5rem;
+    min-height: 40px; /* Ensures consistent card height */
+}
+
+.challenge-progress-bar-bg {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 9999px;
+    height: 0.75rem;
+    overflow: hidden;
+}
+
+.challenge-progress-bar {
+    background: linear-gradient(to right, #8b5cf6, #10b981);
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease-out;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: bold;
+    padding-right: 0.25rem;
+}
+
+.challenge-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease-out;
-    animation: fadeIn 0.5s ease-out;
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.5rem;
 }
 
-.continue-learning-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.4);
-    border-color: rgba(96, 165, 250, 0.8);
+.challenge-reward {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 600;
+    color: #fcd34d;
 }
-/* ===================== NEW FEATURE END ===================== */
+
+.challenge-deadline {
+    font-weight: 600;
+    color: #fca5a5;
+}
+/* ===================== NEW CHALLENGE CARD STYLES END ===================== */
