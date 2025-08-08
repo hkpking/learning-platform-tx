@@ -2,6 +2,7 @@ import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { CourseView } from '../views/course.js';
 import { ApiService } from '../services/api.js';
+
 export const ComponentFactory = {
     createCategoryCard(category, isLocked) {
         const card = document.createElement("div");
@@ -55,14 +56,34 @@ export const ComponentFactory = {
             const selectedIdx = parseInt(selectedOpt.dataset.index);
             if (selectedIdx === correctIdx) {
                 selectedOpt.classList.remove("selected"); selectedOpt.classList.add("correct");
+                
+                // Check if points for this specific quiz have already been awarded
                 if (!AppState.userProgress.awardedPointsBlocks.has(block.id)) {
                     try {
+                        // =================================================================
+                        // NEW: Check if this is the very first time the user is scoring ANY points
+                        // =================================================================
+                        const isFirstScoreEver = AppState.userProgress.awardedPointsBlocks.size === 0;
+
                         UI.showNotification("回答正确! 获得 10 学分!", "success");
                         await ApiService.addPoints(AppState.user.id, 10);
-                        AppState.userProgress.awardedPointsBlocks.add(block.id);
+                        AppState.userProgress.awardedPointsBlocks.add(block.id); // Add to set after successful API call
                         CourseView.updateLeaderboard();
-                    } catch (e) { UI.showNotification(e.message, "error"); }
-                } else { UI.showNotification("回答正确! (积分已获得)", "success"); }
+
+                        // =================================================================
+                        // NEW: If it was the first score, award the achievement
+                        // =================================================================
+                        if (isFirstScoreEver) {
+                            await ApiService.awardAchievement('SCORE_FIRST_POINTS');
+                            UI.showNotification("获得成就：点石成金！", "success");
+                        }
+
+                    } catch (e) {
+                        UI.showNotification(e.message, "error");
+                    }
+                } else {
+                    UI.showNotification("回答正确! (积分已获得)", "success");
+                }
                 await CourseView.completeBlock(block.id);
             } else {
                 selectedOpt.classList.remove("selected"); selectedOpt.classList.add("incorrect");
