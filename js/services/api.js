@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.4.3] Fixed registration conflict by removing redundant profile insertion.
+ * [v2.5.0] Added achievement system functions.
  */
 
 // Initialize the Supabase client immediately at the module level.
@@ -23,9 +23,60 @@ export const ApiService = {
         console.log("ApiService initialized with Supabase client.");
     },
 
+    // =================================================================
+    // NEW ACHIEVEMENT FUNCTIONS START
+    // =================================================================
+
+    /**
+     * Calls the database function to award an achievement to the current user.
+     * @param {string} achievementKey The unique trigger_key for the achievement.
+     */
+    async awardAchievement(achievementKey) {
+        const { error } = await this.db.rpc('award_achievement', {
+            achievement_key: achievementKey
+        });
+        if (error) {
+            // We log the error but don't throw, as failing to award an achievement
+            // shouldn't break the user's main experience.
+            console.error(`Failed to award achievement [${achievementKey}]:`, error);
+        }
+    },
+
+    /**
+     * Fetches all achievements earned by a specific user.
+     * @param {string} userId The ID of the user.
+     * @returns {Promise<Array<object>>} A promise that resolves to an array of achievement objects.
+     */
+    async fetchUserAchievements(userId) {
+        const { data, error } = await this.db
+            .from('user_achievements')
+            .select(`
+                earned_at,
+                achievements (
+                    name,
+                    description,
+                    icon_url
+                )
+            `)
+            .eq('user_id', userId)
+            .order('earned_at', { ascending: false });
+
+        if (error) {
+            console.error('Error fetching user achievements:', error);
+            throw new Error('获取用户成就失败。');
+        }
+        // The result is nested, so we flatten it for easier use.
+        return data.map(ua => ({
+            ...ua.achievements,
+            earned_at: ua.earned_at
+        }));
+    },
+
+    // =================================================================
+    // NEW ACHIEVEMENT FUNCTIONS END
+    // =================================================================
+
     async signUp(email, password, fullName) {
-        // Step 1: Create the user in auth.users.
-        // Supabase will automatically trigger the function to create a corresponding public.profiles row.
         const { data: authData, error: authError } = await this.db.auth.signUp({
             email,
             password,
@@ -35,17 +86,12 @@ export const ApiService = {
 
         const userId = authData.user.id;
 
-        // **REMOVED** the manual insert into public.profiles to prevent conflict.
-
-        // Step 2: Create the score entry in public.scores, which also stores the username.
         const { error: scoreError } = await this.db
             .from('scores')
             .insert({ user_id: userId, username: fullName });
 
         if (scoreError) {
             console.error(`User and profile created, but failed to create score entry: ${scoreError.message}`);
-            // This is a partial failure state, but the user can still log in.
-            // They can set their name later on the profile page.
             throw new Error('用户分数记录创建失败，请联系管理员。');
         }
 
