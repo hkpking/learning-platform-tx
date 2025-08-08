@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * [v2.4.2] Fixed "chapter not found" error on continue learning.
+ * @version 2.5.0 - Modified login flow to redirect directly to the learning platform.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -251,37 +251,48 @@ const App = {
 
     async loadMainAppData() {
         try {
-            // This switches to the main view which is now the new hub
-            UI.switchTopLevelView('landing'); 
-            
+            // First, fetch all necessary data.
             const [progress, categories] = await Promise.all([
                 ApiService.getUserProgress(AppState.user.id),
                 ApiService.fetchLearningMap(),
             ]);
             
+            // Then, update the application state.
             AppState.userProgress.completedBlocks = new Set(progress.completed);
             AppState.userProgress.awardedPointsBlocks = new Set(progress.awarded);
             AppState.learningMap.categories = categories;
             this.flattenLearningStructure();
 
-            // Setup UI for logged-in user
-            this.setupSmartNavigation();
-            this.renderCourseList();
-            this.updateLandingPageLeaderboards(); // Refresh leaderboards with user context
+            // ==================== MODIFICATION START ====================
+            // Instead of showing the landing page hub, directly switch to the main learning interface.
+            UI.switchTopLevelView('main');
+            
+            // And immediately display the first view of the learning platform.
+            CourseView.showCategoryView();
+            
+            // Also update the leaderboard, which is visible in the main app view.
+            CourseView.updateLeaderboard();
+            // ===================== MODIFICATION END =====================
 
+            // Update UI elements in the main header.
             UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !AppState.profile || AppState.profile.role !== 'admin');
             const displayName = AppState.profile.username || AppState.user.email.split('@')[0];
             UI.elements.mainApp.userGreeting.textContent = `欢迎, ${displayName}`;
             
-            // Set up real-time updates
+            // Set up real-time updates for scores.
             ApiService.db.channel('public:scores').on('postgres_changes', { event: '*', schema: 'public', table: 'scores' }, () => {
-                CourseView.updateLeaderboard();
+                // Only update the leaderboard if the user is in the main view.
+                if (AppState.current.topLevelView === 'main') {
+                    CourseView.updateLeaderboard();
+                }
+                // We can still update the landing page data in the background for consistency.
                 this.updateLandingPageLeaderboards();
             }).subscribe();
+
         } catch (error) {
             console.error("Failed to load main app data:", error);
             UI.showNotification(`加载数据失败: ${error.message}`, 'error');
-            // Fallback to a simpler view if data loading fails
+            // Fallback to the landing view if anything goes wrong.
             UI.switchTopLevelView('landing');
         }
     },
@@ -311,8 +322,6 @@ const App = {
                 continueLearningTitle.textContent = chapter ? `${chapter.title} - ${firstUncompleted.title}` : firstUncompleted.title;
 
                 const clickHandler = () => {
-                    // **THE FIX IS HERE**
-                    // Set the current category ID before selecting the chapter.
                     AppState.current.categoryId = firstUncompleted.categoryId;
                     UI.switchTopLevelView('main');
                     CourseView.selectChapter(firstUncompleted.chapterId);
