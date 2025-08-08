@@ -15,6 +15,3 @@ build/
 
 # 日志文件
 *.log
-
-# Application config
-config.js
