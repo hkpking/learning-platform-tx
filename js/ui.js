@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 4.0.1 - [FIX] Added the missing switchCourseView function to handle navigation within the main learning view.
+ * @version 4.0.2 - [FIX] Added complete set of admin panel element selectors.
  */
 import { AppState } from './state.js';
 
@@ -35,7 +35,6 @@ export const UI = {
             leaderboardTabs: document.querySelectorAll('.tab-btn'),
             personalBoard: document.getElementById('leaderboard-content-personal'),
             factionBoard: document.getElementById('leaderboard-content-faction'),
-            challengeContainer: document.getElementById('faction-challenge-btn'), // Placeholder for now
         },
 
         // Auth View elements
@@ -83,15 +82,44 @@ export const UI = {
         // Immersive (Video/Document) Viewer
         immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
 
-        // Admin Panel elements
+        // [FIXED] Added all admin panel element selectors
         admin: {
             container: document.getElementById('admin-management-view'),
             breadcrumb: document.getElementById('admin-breadcrumb'),
-            backToLearningBtn: document.getElementById('back-to-learning-btn'),
+            backToLobbyBtn: document.getElementById('admin-back-to-lobby-btn'),
             adminNav: document.querySelector('.admin-view-bg nav'),
+            
             categoryListView: document.getElementById('admin-category-list-view'),
+            categoriesTableContainer: document.getElementById('admin-categories-table-container'),
+            addCategoryBtn: document.getElementById('admin-add-category-btn'),
+            
+            chapterListView: document.getElementById('admin-chapter-list-view'),
+            chapterListTitle: document.getElementById('admin-chapter-list-title'),
+            chaptersTableContainer: document.getElementById('admin-chapters-table-container'),
+            addChapterBtn: document.getElementById('admin-add-chapter-btn'),
+
+            sectionListView: document.getElementById('admin-section-list-view'),
+            sectionListTitle: document.getElementById('admin-section-list-title'),
+            sectionsTableContainer: document.getElementById('admin-sections-table-container'),
+            addSectionBtn: document.getElementById('admin-add-section-btn'),
+            
+            blockEditorView: document.getElementById('admin-block-editor-view'),
+            editorSectionTitle: document.getElementById('admin-editor-section-title'),
+            blocksList: document.getElementById('admin-blocks-list'),
+            addNewBlockBtn: document.getElementById('admin-add-new-block-btn'),
+
             challengesListView: document.getElementById('admin-challenges-list-view'),
-            // ... other admin elements
+            challengesTableContainer: document.getElementById('admin-challenges-table-container'),
+            addChallengeBtn: document.getElementById('admin-add-challenge-btn'),
+
+            modal: {
+                backdrop: document.getElementById('admin-modal-backdrop'),
+                container: document.getElementById('form-modal'),
+                form: document.getElementById('modal-form'),
+                title: document.getElementById('modal-title'),
+                saveBtn: document.getElementById('save-modal-btn'),
+                cancelBtn: document.getElementById('cancel-modal-btn'),
+            }
         },
     },
     showNotification(message, type = 'success') {
@@ -116,38 +144,23 @@ export const UI = {
         AppState.current.topLevelView = view;
     },
 
-    /**
-     * [FIXED] Added this missing function.
-     * It handles switching between views *inside* the main learning area,
-     * such as the category grid, chapter grid, and detail view.
-     * @param {string} viewName - The name of the course view to activate (e.g., 'category-selection').
-     */
     switchCourseView(viewName) {
         const mainView = this.elements.mainAppView;
-        
-        // A list of all possible sub-views within the main application view
         const subViews = [
             'category-selection-view',
             'chapter-selection-view',
             'chapter-detail-view',
             'admin-management-view'
         ];
-
-        // Hide all sub-views first
         subViews.forEach(viewId => {
             const viewElement = document.getElementById(viewId);
-            if (viewElement) {
-                viewElement.classList.remove('active');
-            }
+            if (viewElement) viewElement.classList.remove('active');
         });
-
-        // Show the target sub-view
-        const targetView = document.getElementById(viewName + '-view');
+        const targetView = document.getElementById(viewName);
         if (targetView) {
             targetView.classList.add('active');
+            targetView.classList.remove('hidden');
         }
-
-        // Update the global state
         AppState.current.courseView = viewName;
     },
 };
