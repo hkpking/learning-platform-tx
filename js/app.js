@@ -15,7 +15,8 @@ import { getFactionInfo } from './constants.js';
 const App = {
     init() {
         this.bindEvents();
-        this.initLandingPageAnimation(); 
+        this.initLandingPageAnimation();
+        this.initMusicControls();
         ApiService.initialize();
         ApiService.db.auth.onAuthStateChange((_event, session) => {
             if (session && session.user) {
@@ -55,6 +56,72 @@ const App = {
             }, 1500); 
         }
         playNarrative();
+    },
+
+    initMusicControls() {
+        const music = document.getElementById('background-music');
+        const controlBtn = document.getElementById('music-control-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const landingView = document.getElementById('landing-view');
+
+        const togglePlayback = () => {
+            if (music.paused) {
+                music.play().then(() => {
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                }).catch(error => console.error("Music play failed:", error));
+            } else {
+                music.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        };
+
+        controlBtn.addEventListener('click', togglePlayback);
+
+        // Autoplay logic
+        const attemptAutoplay = () => {
+            music.play().then(() => {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            }).catch(() => {
+                // Autoplay was blocked, user must click.
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            });
+        };
+
+        // Observer to control visibility and playback based on view
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                if (mutation.attributeName === 'class') {
+                    const isLandingActive = landingView.classList.contains('active');
+                    if (isLandingActive) {
+                        controlBtn.classList.remove('opacity-0');
+                        controlBtn.classList.remove('pointer-events-none');
+                    } else {
+                        music.pause();
+                        playIcon.classList.remove('hidden');
+                        pauseIcon.classList.add('hidden');
+                        controlBtn.classList.add('opacity-0');
+                        controlBtn.classList.add('pointer-events-none');
+                    }
+                }
+            });
+        });
+
+        observer.observe(landingView, { attributes: true });
+
+        // Initial check
+        if (landingView.classList.contains('active')) {
+            controlBtn.classList.remove('opacity-0');
+            controlBtn.classList.remove('pointer-events-none');
+            attemptAutoplay();
+        } else {
+            controlBtn.classList.add('opacity-0');
+            controlBtn.classList.add('pointer-events-none');
+        }
     },
 
     bindEvents() {
