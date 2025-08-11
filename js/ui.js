@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 5.0.0 - Refactored for new top-level view structure (Lobby, App, Admin).
+ * @version 5.0.1 - [FIX] Corrected switchCourseView to properly append '-view' to the ID, fixing nested view navigation.
  */
 import { AppState } from './state.js';
 
@@ -131,7 +131,8 @@ export const UI = {
     switchCourseView(viewName) {
         const container = this.elements.mainAppView;
         container.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        const targetView = document.getElementById(viewName);
+        // [FIXED] Correctly append '-view' to find the element by its full ID
+        const targetView = document.getElementById(viewName + '-view');
         if (targetView) {
             targetView.classList.add('active');
         }
