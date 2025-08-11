@@ -1,3 +1,8 @@
+/**
+ * @file course.js
+ * @description Manages the views and logic for the main learning platform.
+ * @version 5.0.1 - [FIX] Refactored achievement checking logic to be more robust and added a check for the first score achievement.
+ */
 import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { ApiService } from '../services/api.js';
@@ -20,7 +25,7 @@ export const CourseView = {
         const prevCat = cats[catIdx - 1];
         if (!prevCat) return true;
         const prevCatBlocks = AppState.learningMap.flatStructure.filter(b => b.categoryId === prevCat.id);
-        if (prevCatBlocks.length === 0) return false;
+        if (prevCatBlocks.length === 0) return true; // An empty previous category should not block progress
         return prevCatBlocks.every(b => AppState.userProgress.completedBlocks.has(b.id));
     },
     showChapterView() {
@@ -33,30 +38,6 @@ export const CourseView = {
         grid.innerHTML = '';
         if (!cat.chapters || cat.chapters.length === 0) { UI.renderEmpty(grid, '本篇章下暂无章节。'); return; }
         cat.chapters.forEach(ch => grid.appendChild(ComponentFactory.createChapterCard(ch)));
-    },
-    async updateLeaderboard() {
-        // This function seems to be for a different leaderboard UI that is not currently visible.
-        // The main lobby leaderboard is updated in app.js.
-        // We will leave this function as is, in case it's used by a future feature.
-        try {
-            const board = await ApiService.fetchLeaderboard();
-            AppState.leaderboard = board;
-            // Assuming there's a leaderboard list element somewhere not in the current active HTML
-            const list = document.getElementById('leaderboard-list'); 
-            if (!list) return; // Exit if the element doesn't exist
-            list.innerHTML = "";
-            if (!board || board.length === 0) { list.innerHTML = `<p class="text-center text-sm text-gray-400">暂无排名</p>`; return; }
-            board.forEach((p, i) => {
-                const rank = i + 1;
-                const item = document.createElement("div");
-                const isCurrentUser = AppState.user && (AppState.user.email === p.username || AppState.user.id === p.user_id);
-                item.className = `rank-item rank-${rank} flex items-center p-2 rounded-md ${isCurrentUser ? "bg-blue-500/30" : ""}`;
-                let rankBadge = rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `<div class="rank-badge flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg mr-3">${rank}</div>`;
-                const displayName = p.full_name || p.username.split('@')[0];
-                item.innerHTML = `<div class="w-10 text-center text-xl">${rankBadge}</div><div class="flex-grow"><div class="font-bold text-white truncate">${displayName}</div><div class="text-sm text-gray-400">${p.points} 分</div></div>`;
-                list.appendChild(item);
-            });
-        } catch (e) { console.error("Failed to update leaderboard:", e); }
     },
     selectCategory(id) { AppState.current.categoryId = id; this.showChapterView(); },
     selectChapter(id) { AppState.current.chapterId = id; this.showDetailView(); },
@@ -75,7 +56,7 @@ export const CourseView = {
                 group.className = 'section-group';
                 group.innerHTML = `<h3 class="section-group-title">${sec.title}</h3>`;
                 const ul = document.createElement('ul');
-                (sec.blocks || []).forEach(b => ul.appendChild(ComponentFactory.createBlockItem(b, !this.isBlockUnlocked(b.id), AppState.userProgress.completedBlocks.has(b.id))));
+                (sec.blocks || []).sort((a,b) => a.order - b.order).forEach(b => ul.appendChild(ComponentFactory.createBlockItem(b, !this.isBlockUnlocked(b.id), AppState.userProgress.completedBlocks.has(b.id))));
                 group.appendChild(ul);
                 sidebarNav.appendChild(group);
             });
@@ -127,33 +108,37 @@ export const CourseView = {
     },
     
     async completeBlock(blockId) {
-        // Prevent re-completing
         if (AppState.userProgress.completedBlocks.has(blockId)) return;
-
         const wasFirstCompletion = AppState.userProgress.completedBlocks.size === 0;
         AppState.userProgress.completedBlocks.add(blockId);
         
         try {
             await ApiService.saveUserProgress(AppState.user.id, { completed: Array.from(AppState.userProgress.completedBlocks), awarded: Array.from(AppState.userProgress.awardedPointsBlocks) });
-            
             await this.checkAndAwardAchievements(blockId, wasFirstCompletion);
-
-            this.showDetailView(); // Refresh the view
+            this.showDetailView();
         } catch (e) { 
             UI.showNotification(e.message, "error"); 
-            // Rollback state if save fails
             AppState.userProgress.completedBlocks.delete(blockId); 
         }
     },
 
-    async checkAndAwardAchievements(completedBlockId, wasFirstCompletion) {
-        // --- 1. Check for "Complete First Block" ---
-        if (wasFirstCompletion) {
+    async checkAndAwardAchievements(completedBlockId, isFirstScore) {
+        // [FIXED] This function now handles all achievement checks after a block is completed.
+        const wasFirstBlockCompletion = AppState.userProgress.completedBlocks.size === 1;
+
+        // --- 1. Check for "First Score" ---
+        if (isFirstScore) {
+            await ApiService.awardAchievement('SCORE_FIRST_POINTS');
+            UI.showNotification("获得成就：点石成金！", "success");
+        }
+
+        // --- 2. Check for "Complete First Block" ---
+        if (wasFirstBlockCompletion) {
             await ApiService.awardAchievement('COMPLETE_FIRST_BLOCK');
             UI.showNotification("获得成就：初窥门径！", "success");
         }
 
-        // --- 2. Check for "Complete First Chapter" ---
+        // --- 3. Check for "Complete First Chapter" ---
         const block = AppState.learningMap.flatStructure.find(b => b.id === completedBlockId);
         if (!block) return;
 
@@ -162,7 +147,6 @@ export const CourseView = {
         const allChapterBlocksCompleted = allBlocksInChapter.every(b => AppState.userProgress.completedBlocks.has(b.id));
         
         if (allChapterBlocksCompleted) {
-            // We award it, the backend function will prevent duplicates.
             await ApiService.awardAchievement('COMPLETE_FIRST_CHAPTER');
             UI.showNotification("获得成就：学有所成！", "success");
         }
@@ -188,7 +172,6 @@ export const CourseView = {
             AppState.current.activePlayer = null;
         }
         UI.elements.immersiveView.content.innerHTML = ''; 
-        // [FIXED] Changed 'main' to 'main-app' to correctly return to the learning view.
         UI.switchTopLevelView('main-app');
     }
 };
