@@ -52,8 +52,20 @@ export const AuthView = {
 
         try {
             if (AppState.authMode === 'login') {
-                await ApiService.signIn(email, password);
-                // The onAuthStateChange listener in app.js will handle the rest
+                // [FIX] Manually handle login success to ensure navigation to the game lobby.
+                const data = await ApiService.signIn(email, password);
+                
+                // The onAuthStateChange listener will also fire, but we trigger the
+                // full login sequence with navigation immediately. The App.handleLogin
+                // function is designed to be idempotent and won't cause issues if called twice.
+                if (data && data.user) {
+                    // We need to call the global App object, which is available on the window.
+                    // The 'true' argument ensures navigation happens.
+                    await window.App.handleLogin(data.user, true);
+                } else {
+                    // This case should ideally not be reached if signIn throws an error, but it's good for safety.
+                    throw new Error("登录失败，无法获取用户信息。");
+                }
             } else {
                 // Pass the full name to the signUp function
                 await ApiService.signUp(email, password, fullName);
@@ -61,9 +73,11 @@ export const AuthView = {
                 this.switchAuthMode(); // Switch back to login form
             }
         } catch (error) {
+            // The ApiService throws detailed errors, which we display here.
             UI.showNotification(error.message, 'error');
         } finally {
             submitBtn.disabled = false;
+            // Restore the button text based on the current mode.
             submitBtn.textContent = AppState.authMode === 'login' ? '登录' : '注册';
         }
     }
