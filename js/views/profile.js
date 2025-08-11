@@ -7,19 +7,17 @@ export const ProfileView = {
     async showProfileView() {
         UI.switchTopLevelView('profile');
         const container = UI.elements.profile.content;
-        UI.renderLoading(container, 'content');
+        UI.renderLoading(container); // [FIXED] Corrected the function call
 
         try {
             const userId = AppState.user.id;
             
-            // Fetch all profile-related data in parallel, including achievements
             const [profile, scoreData, achievements] = await Promise.all([
                 ApiService.getProfile(userId),
                 ApiService.getScoreInfo(userId),
-                ApiService.fetchUserAchievements(userId) // NEW: Fetch achievements
+                ApiService.fetchUserAchievements(userId)
             ]);
 
-            // Update AppState
             AppState.profile = { 
                 ...AppState.profile, 
                 ...profile, 
@@ -32,12 +30,9 @@ export const ProfileView = {
             const completedBlocks = AppState.userProgress.completedBlocks.size;
             const progressPercentage = totalBlocks > 0 ? ((completedBlocks / totalBlocks) * 100).toFixed(0) : 0;
 
-            // Updated HTML structure to include a placeholder for the "Achievement Hall"
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
-                    <div class="md:col-span-1 text-center" id="profile-identity">
-                        <!-- Identity section will be rendered here -->
-                    </div>
+                    <div class="md:col-span-1 text-center" id="profile-identity"></div>
                     <div class="md:col-span-2">
                         <h3 class="text-xl font-bold text-gray-300 mb-6">学习统计</h3>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -60,18 +55,14 @@ export const ProfileView = {
                         </div>
                     </div>
                 </div>
-                <!-- NEW: Achievements Section -->
                 <div id="achievements-hall" class="mt-12 pt-8 border-t border-slate-700/50">
                     <h3 class="text-2xl font-bold text-center text-amber-300 mb-8 font-calligraphy">成就殿堂</h3>
-                    <div id="achievements-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        <!-- Achievements will be rendered here by the new function -->
-                    </div>
+                    <div id="achievements-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6"></div>
                 </div>
             `;
 
-            // Render the separate parts of the profile
             this.renderIdentitySection();
-            this.renderAchievements(achievements); // NEW: Call the render function
+            this.renderAchievements(achievements);
 
         } catch (error) {
             console.error("Failed to load profile data:", error);
@@ -79,10 +70,6 @@ export const ProfileView = {
         }
     },
     
-    /**
-     * NEW: Renders the grid of earned achievements.
-     * @param {Array<object>} achievements - The list of achievements fetched from the API.
-     */
     renderAchievements(achievements) {
         const grid = document.getElementById('achievements-grid');
         if (!grid) return;
@@ -113,27 +100,16 @@ export const ProfileView = {
 
         let nameHtml;
         if (profile.username) {
-            nameHtml = `
-                <h2 class="text-2xl font-bold text-white">${profile.username}</h2>
-                <p class="text-sm text-gray-400">(${AppState.user.email})</p>
-            `;
+            nameHtml = `<h2 class="text-2xl font-bold text-white">${profile.username}</h2><p class="text-sm text-gray-400">(${AppState.user.email})</p>`;
         } else {
-            nameHtml = `
-                <form id="profile-name-form">
-                    <p class="text-gray-400 mb-2">请设置您的显示姓名：</p>
-                    <input type="text" id="profile-name-input" placeholder="请输入姓名" class="input-field text-center w-full p-2 rounded-lg" required>
-                    <button type="submit" class="w-full mt-2 btn btn-primary text-sm py-2 px-4 rounded-lg">保存姓名</button>
-                </form>
-            `;
+            nameHtml = `<form id="profile-name-form"><p class="text-gray-400 mb-2">请设置您的显示姓名：</p><input type="text" id="profile-name-input" placeholder="请输入姓名" class="input-field text-center w-full p-2 rounded-lg" required><button type="submit" class="w-full mt-2 btn btn-primary text-sm py-2 px-4 rounded-lg">保存姓名</button></form>`;
         }
 
         container.innerHTML = `
             <div class="w-32 h-32 mx-auto rounded-full bg-slate-700/50 flex items-center justify-center mb-4 border-2 border-${factionInfo.color}-500 shadow-lg">
                 <span class="text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-tr from-${factionInfo.color}-400 to-white">${avatarChar}</span>
             </div>
-            <div id="name-display-area">
-                ${nameHtml}
-            </div>
+            <div id="name-display-area">${nameHtml}</div>
             <p class="text-lg text-${factionInfo.color}-400 font-semibold mt-2">${factionInfo.name}</p>
         `;
 
