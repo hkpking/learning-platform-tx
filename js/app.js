@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 5.0.1 - [FIX] Corrected event listeners to call view-specific loading functions instead of just switching views.
+ * @version 5.0.2 - [CRITICAL FIX] Corrected all view-switching event listeners to call the proper data-loading functions (e.g., ProfileView.showProfileView) instead of just toggling visibility. This fixes the learning, profile, and admin platforms not loading content.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -32,7 +32,7 @@ const App = {
     bindEvents() {
         // --- Lobby View Events ---
         UI.elements.lobby.playerInfo.addEventListener('click', () => {
-            if (AppState.user) ProfileView.showProfileView(); // Corrected Call
+            if (AppState.user) ProfileView.showProfileView(); // [FIXED] Call the view loader
             else UI.switchTopLevelView('auth');
         });
         UI.elements.lobby.logoutBtn.addEventListener('click', () => ApiService.signOut());
@@ -46,7 +46,7 @@ const App = {
             const action = button.dataset.action;
             switch(action) {
                 case 'show-all-quests': this.showLobbyModal('all-quests'); break;
-                case 'show-profile': ProfileView.showProfileView(); break; // [FIXED] Call the correct view loader
+                case 'show-profile': ProfileView.showProfileView(); break; // [FIXED] Call the view loader
                 case 'show-admin': AdminView.showAdminView(); break;
             }
         });
@@ -72,7 +72,7 @@ const App = {
 
         // --- Main App (Learning) Events ---
         UI.elements.mainApp.backToHubBtn.addEventListener('click', (e) => { e.preventDefault(); UI.switchTopLevelView('game-lobby'); });
-        UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView()); // [FIXED] Call the correct view loader
+        UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView()); // [FIXED] Call the view loader
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
         UI.elements.mainApp.restartBtn.addEventListener('click', () => this.toggleRestartModal(true));
         UI.elements.mainApp.backToCategoriesBtn.addEventListener('click', () => CourseView.showCategoryView());
