@@ -291,9 +291,13 @@ const App = {
     },
 };
 
+// Make the App object globally accessible for ComponentFactory
 window.App = App;
+
 window.onload = () => {
-    try { App.init(); } catch (error) {
+    try { 
+        App.init(); 
+    } catch (error) {
         console.error("Failed to initialize application:", error);
         document.body.innerHTML = `<div style="color: red; text-align: center; padding: 50px; font-family: sans-serif;"><h1>Application Failed to Start</h1><p>${error.message}</p></div>`;
     }
