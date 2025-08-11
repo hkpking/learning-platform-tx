@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 4.0.0 - Implemented Game Lobby UI.
+ * @version 4.0.1 - Fixed initialization error.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -94,8 +94,6 @@ const App = {
         UI.elements.immersiveView.closeBtn.addEventListener('click', () => CourseView.closeImmersiveViewer());
         UI.elements.restartModal.cancelBtn.addEventListener('click', () => this.toggleRestartModal(false));
         UI.elements.restartModal.confirmBtn.addEventListener('click', () => this.handleConfirmRestart());
-        
-        AdminView.bindAdminEvents();
         
         const factionModal = UI.elements.factionModal.container;
         factionModal.addEventListener('click', (e) => {
