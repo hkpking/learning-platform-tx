@@ -145,7 +145,6 @@ body {
     }
 }
 
-/* [NEW] Pulsing animation for the main call-to-action button */
 #start-journey-btn {
     animation: button-pulse-glow 2.5s infinite ease-in-out;
 }
@@ -169,6 +168,14 @@ body {
 /* Footer Styles */
 #landing-view footer {
     background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+}
+
+/* [NEW] Music control button style */
+#music-control-btn {
+    transition: opacity 0.5s ease-in-out, transform 0.3s ease;
+}
+#music-control-btn:hover {
+    transform: scale(1.1);
 }
 
 
