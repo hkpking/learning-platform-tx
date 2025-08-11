@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 5.0.0 - Refactored for cleaner view separation (Lobby, App, Admin).
+ * @version 5.0.1 - [FIX] Corrected event listeners to call view-specific loading functions instead of just switching views.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -32,7 +32,7 @@ const App = {
     bindEvents() {
         // --- Lobby View Events ---
         UI.elements.lobby.playerInfo.addEventListener('click', () => {
-            if (AppState.user) UI.switchTopLevelView('profile');
+            if (AppState.user) ProfileView.showProfileView(); // Corrected Call
             else UI.switchTopLevelView('auth');
         });
         UI.elements.lobby.logoutBtn.addEventListener('click', () => ApiService.signOut());
@@ -46,7 +46,7 @@ const App = {
             const action = button.dataset.action;
             switch(action) {
                 case 'show-all-quests': this.showLobbyModal('all-quests'); break;
-                case 'show-profile': UI.switchTopLevelView('profile'); break;
+                case 'show-profile': ProfileView.showProfileView(); break; // [FIXED] Call the correct view loader
                 case 'show-admin': AdminView.showAdminView(); break;
             }
         });
@@ -72,7 +72,7 @@ const App = {
 
         // --- Main App (Learning) Events ---
         UI.elements.mainApp.backToHubBtn.addEventListener('click', (e) => { e.preventDefault(); UI.switchTopLevelView('game-lobby'); });
-        UI.elements.mainApp.profileViewBtn.addEventListener('click', () => UI.switchTopLevelView('profile'));
+        UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView()); // [FIXED] Call the correct view loader
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
         UI.elements.mainApp.restartBtn.addEventListener('click', () => this.toggleRestartModal(true));
         UI.elements.mainApp.backToCategoriesBtn.addEventListener('click', () => CourseView.showCategoryView());
@@ -130,12 +130,9 @@ const App = {
             AppState.factionLeaderboard = factionLb;
 
             this.flattenLearningStructure();
-            
-            // Update UI components that depend on this data
             this.updateHeaders();
             this.renderGameLobby(true);
             
-            // Stay on the lobby view after loading data
             UI.switchTopLevelView('game-lobby');
 
         } catch (error) {
@@ -152,11 +149,8 @@ const App = {
         const displayName = profile.username || user.email.split('@')[0];
         const isAdmin = profile.role === 'admin';
 
-        // Update Main App Header
         UI.elements.mainApp.userGreeting.textContent = `欢迎, ${displayName}`;
         UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', !isAdmin);
-
-        // Update Lobby Header (already done in renderGameLobby, but good practice)
         UI.elements.lobby.playerName.textContent = displayName;
         UI.elements.lobby.adminNavBtn.style.display = isAdmin ? 'flex' : 'none';
     },
