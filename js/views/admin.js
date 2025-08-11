@@ -4,34 +4,43 @@ import { ApiService } from '../services/api.js';
 import { CourseView } from './course.js';
 
 export const AdminView = {
+    _isInitialized: false,
     _currentDeletion: { type: null, id: null },
-    bindAdminEvents() {
-        const { admin, deleteConfirmModal } = UI.elements;
-        // 绑定主管理视图的事件
-        admin.backToLearningBtn.addEventListener('click', () => CourseView.showCategoryView());
-        admin.categoriesTableContainer.addEventListener('click', (e) => this.handleCategoryListAction(e));
-        admin.chaptersTableContainer.addEventListener('click', (e) => this.handleChapterListAction(e));
-        admin.sectionsTableContainer.addEventListener('click', (e) => this.handleSectionListAction(e));
-        admin.blocksList.addEventListener('click', (e) => this.handleBlockListAction(e));
-        admin.addCategoryBtn.addEventListener('click', () => this.openModal('category'));
-        admin.addChapterBtn.addEventListener('click', () => this.openModal('chapter'));
-        admin.addSectionBtn.addEventListener('click', () => this.openModal('section'));
-        admin.addNewBlockBtn.addEventListener('click', () => this.openModal('block'));
-        admin.breadcrumb.addEventListener('click', (e) => this.handleBreadcrumbClick(e));
-        
-        // 绑定模态窗口事件
-        admin.modal.saveBtn.addEventListener('click', () => this.handleSave());
-        admin.modal.cancelBtn.addEventListener('click', () => this.closeModal());
-        
-        // 绑定删除确认模态窗口事件
-        deleteConfirmModal.confirmBtn.addEventListener('click', () => this.confirmDeletion());
-        deleteConfirmModal.cancelBtn.addEventListener('click', () => this.hideDeleteConfirmation());
 
-        // 部门挑战管理事件绑定
-        admin.challengesTableContainer.addEventListener('click', (e) => this.handleChallengeListAction(e));
-        admin.addChallengeBtn.addEventListener('click', () => this.openModal('challenge'));
+    init() {
+        if (this._isInitialized) return;
+        
+        const { admin, deleteConfirmModal } = UI.elements;
+        
+        // Bind events only if the elements exist to prevent errors
+        admin.backToLearningBtn?.addEventListener('click', () => {
+            UI.switchTopLevelView('game-lobby');
+        });
+        admin.categoriesTableContainer?.addEventListener('click', (e) => this.handleCategoryListAction(e));
+        admin.chaptersTableContainer?.addEventListener('click', (e) => this.handleChapterListAction(e));
+        admin.sectionsTableContainer?.addEventListener('click', (e) => this.handleSectionListAction(e));
+        admin.blocksList?.addEventListener('click', (e) => this.handleBlockListAction(e));
+        admin.addCategoryBtn?.addEventListener('click', () => this.openModal('category'));
+        admin.addChapterBtn?.addEventListener('click', () => this.openModal('chapter'));
+        admin.addSectionBtn?.addEventListener('click', () => this.openModal('section'));
+        admin.addNewBlockBtn?.addEventListener('click', () => this.openModal('block'));
+        admin.breadcrumb?.addEventListener('click', (e) => this.handleBreadcrumbClick(e));
+        
+        admin.modal.saveBtn?.addEventListener('click', () => this.handleSave());
+        admin.modal.cancelBtn?.addEventListener('click', () => this.closeModal());
+        
+        deleteConfirmModal.confirmBtn?.addEventListener('click', () => this.confirmDeletion());
+        deleteConfirmModal.cancelBtn?.addEventListener('click', () => this.hideDeleteConfirmation());
+
+        admin.challengesTableContainer?.addEventListener('click', (e) => this.handleChallengeListAction(e));
+        admin.addChallengeBtn?.addEventListener('click', () => this.openModal('challenge'));
+
+        this._isInitialized = true;
     },
+
     async showAdminView() { 
+        this.init(); // Initialize event listeners on first view
+        UI.switchTopLevelView('main-app'); 
         UI.switchCourseView('admin-management'); 
         this.showCategoryList(); 
         const navButtons = UI.elements.admin.adminNav.querySelectorAll('button[data-admin-view]');
@@ -230,12 +239,10 @@ export const AdminView = {
         switch (action) {
             case 'edit': this.openModal('challenge', i); break;
             case 'delete': this.showDeleteConfirmation('challenge', id, i.title); break;
-            // [NEW] 结算挑战的动作
             case 'end-challenge': this.handleEndChallenge(id, i.title); break;
         }
     },
     async handleEndChallenge(challengeId, challengeTitle) {
-        // 使用一个简单的确认对话框（您可以用自定义的模态窗口替换）
         if (confirm(`您确定要结算挑战 "${challengeTitle}" 吗？此操作将分发奖励并结束挑战。`)) {
             try {
                 UI.showNotification('正在结算挑战...', 'info');
