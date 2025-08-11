@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * [v2.4.3] Added full name input elements for the auth form.
+ * @version 4.0.0 - Added Game Lobby UI elements.
  */
 import { AppState } from './state.js';
 
@@ -12,39 +12,35 @@ export const UI = {
         factionModal: { container: document.getElementById('faction-selection-modal') },
         restartModal: { container: document.getElementById('restart-confirm-modal'), confirmBtn: document.getElementById('confirm-restart-btn'), cancelBtn: document.getElementById('cancel-restart-btn') },
         deleteConfirmModal: { container: document.getElementById('delete-confirm-modal'), message: document.getElementById('delete-confirm-message'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
-        leaderboardContainer: document.getElementById('leaderboard-container'),
-        leaderboardList: document.getElementById('leaderboard-list'),
 
         // Top-level view containers
-        landingView: document.getElementById('landing-view'),
+        gameLobbyView: document.getElementById('game-lobby-view'),
         authView: document.getElementById('auth-view'),
         mainAppView: document.getElementById('main-app-view'),
         profileView: document.getElementById('profile-view'),
         
-        // Immersive (Video/Document) Viewer
-        immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
-
-        // Profile View elements
-        profile: {
-            content: document.getElementById('profile-content'),
-            backToMainAppBtn: document.getElementById('back-to-main-app-btn')
-        },
-
-        // Landing Page elements
-        landing: { 
-            loginBtn: document.getElementById('new-login-btn'), 
-            startBtn: document.getElementById('new-start-btn'), 
-            subtitle: document.getElementById('subtitle'), 
-            scrollIndicator: document.getElementById('scroll-indicator'),
-            personalTab: document.getElementById('landing-personal-tab'),
-            factionTab: document.getElementById('landing-faction-tab'),
-            personalBoard: document.getElementById('landing-personal-board'),
-            factionBoard: document.getElementById('landing-faction-board')
+        // Game Lobby elements
+        lobby: {
+            playerInfo: document.getElementById('lobby-player-info'),
+            avatar: document.getElementById('lobby-avatar'),
+            playerName: document.getElementById('lobby-player-name'),
+            playerLevel: document.getElementById('lobby-player-level'),
+            logoutBtn: document.getElementById('logout-btn-lobby'),
+            bottomNav: document.getElementById('lobby-bottom-nav'),
+            adminNavBtn: document.querySelector('.lobby-nav-btn[data-action="show-admin"]'),
+            plotTaskBtn: document.getElementById('plot-task-btn'),
+            plotTaskTitle: document.getElementById('plot-task-title'),
+            factionChallengeBtn: document.getElementById('faction-challenge-btn'),
+            leaderboardPanel: document.getElementById('leaderboard-panel-lobby'),
+            leaderboardTabs: document.querySelectorAll('.tab-btn'),
+            personalBoard: document.getElementById('leaderboard-content-personal'),
+            factionBoard: document.getElementById('leaderboard-content-faction'),
+            challengeContainer: document.getElementById('faction-challenge-btn'), // Placeholder for now
         },
 
         // Auth View elements
         auth: {
-            backToLandingBtn: document.getElementById('back-to-landing-btn'),
+            backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
             form: document.getElementById('auth-form'),
             title: document.getElementById('form-title'),
             submitBtn: document.getElementById('submit-btn'),
@@ -52,13 +48,40 @@ export const UI = {
             switchBtn: document.getElementById('switch-mode-btn'),
             authInput: document.getElementById('auth-input'),
             passwordInput: document.getElementById('password-input'),
-            // **THE FIX IS HERE**
             fullNameInputContainer: document.getElementById('full-name-input-container'),
             fullNameInput: document.getElementById('full-name-input')
         },
 
-        // Main App View elements
-        mainApp: { header: document.getElementById('main-header'), profileViewBtn: document.getElementById('profile-view-btn'), adminViewBtn: document.getElementById('admin-view-btn'), userGreeting: document.getElementById('user-greeting'), logoutBtn: document.getElementById('logout-btn'), restartBtn: document.getElementById('restart-btn'), categoryView: document.getElementById('category-selection-view'), categoryGrid: document.getElementById('categories-grid'), chapterView: document.getElementById('chapter-selection-view'), chapterTitle: document.getElementById('chapter-view-title'), chapterDesc: document.getElementById('chapter-view-desc'), chapterGrid: document.getElementById('chapters-grid'), backToCategoriesBtn: document.getElementById('back-to-categories-btn'), detailView: document.getElementById('chapter-detail-view'), sidebarHeader: document.getElementById('sidebar-header'), sidebarNav: document.getElementById('sidebar-nav-list'), contentArea: document.getElementById('content-area'), backToChaptersBtn: document.getElementById('back-to-chapters-btn'), },
+        // Main App (Learning) View elements
+        mainApp: { 
+            header: document.getElementById('main-header'), 
+            backToHubBtn: document.getElementById('back-to-hub-btn-from-main'),
+            profileViewBtn: document.getElementById('profile-view-btn'), 
+            adminViewBtn: document.getElementById('admin-view-btn'), 
+            userGreeting: document.getElementById('user-greeting'), 
+            restartBtn: document.getElementById('restart-btn'), 
+            categoryView: document.getElementById('category-selection-view'), 
+            categoryGrid: document.getElementById('categories-grid'), 
+            chapterView: document.getElementById('chapter-selection-view'), 
+            chapterTitle: document.getElementById('chapter-view-title'), 
+            chapterDesc: document.getElementById('chapter-view-desc'), 
+            chapterGrid: document.getElementById('chapters-grid'), 
+            backToCategoriesBtn: document.getElementById('back-to-categories-btn'), 
+            detailView: document.getElementById('chapter-detail-view'), 
+            sidebarHeader: document.getElementById('sidebar-header'), 
+            sidebarNav: document.getElementById('sidebar-nav-list'), 
+            contentArea: document.getElementById('content-area'), 
+            backToChaptersBtn: document.getElementById('back-to-chapters-btn'), 
+        },
+
+        // Profile View elements
+        profile: {
+            content: document.getElementById('profile-content'),
+            backToMainAppBtn: document.getElementById('back-to-main-app-btn')
+        },
+        
+        // Immersive (Video/Document) Viewer
+        immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
 
         // Admin Panel elements
         admin: {
@@ -66,84 +89,30 @@ export const UI = {
             breadcrumb: document.getElementById('admin-breadcrumb'),
             backToLearningBtn: document.getElementById('back-to-learning-btn'),
             adminNav: document.querySelector('.admin-view-bg nav'),
-            
             categoryListView: document.getElementById('admin-category-list-view'),
-            categoriesTableContainer: document.getElementById('admin-categories-table-container'),
-            chapterListView: document.getElementById('admin-chapter-list-view'),
-            chapterListTitle: document.getElementById('admin-chapter-list-title'),
-            chaptersTableContainer: document.getElementById('admin-chapters-table-container'),
-            sectionListView: document.getElementById('admin-section-list-view'),
-            sectionListTitle: document.getElementById('admin-section-list-title'),
-            sectionsTableContainer: document.getElementById('admin-sections-table-container'),
-            blockEditorView: document.getElementById('admin-block-editor-view'),
-            editorSectionTitle: document.getElementById('admin-editor-section-title'),
-            blocksList: document.getElementById('admin-blocks-list'),
-            addCategoryBtn: document.getElementById('admin-add-category-btn'),
-            addChapterBtn: document.getElementById('admin-add-chapter-btn'),
-            addSectionBtn: document.getElementById('admin-add-section-btn'),
-            addNewBlockBtn: document.getElementById('admin-add-new-block-btn'),
-
             challengesListView: document.getElementById('admin-challenges-list-view'),
-            challengesTableContainer: document.getElementById('admin-challenges-table-container'),
-            addChallengeBtn: document.getElementById('admin-add-challenge-btn'),
-            endChallengeBtn: document.getElementById('end-challenge-btn'),
-
-            modal: {
-                backdrop: document.getElementById('admin-modal-backdrop'),
-                container: document.getElementById('form-modal'),
-                form: document.getElementById('modal-form'),
-                title: document.getElementById('modal-title'),
-                saveBtn: document.getElementById('save-modal-btn'),
-                cancelBtn: document.getElementById('cancel-modal-btn'),
-            }
+            // ... other admin elements
         },
     },
     showNotification(message, type = 'success') {
-        this.elements.notification.textContent = message;
-        this.elements.notification.className = "";
-        this.elements.notification.classList.add(type, "show");
-        setTimeout(() => this.elements.notification.classList.remove("show"), 3500);
+        const el = document.getElementById('notification');
+        el.textContent = message;
+        el.className = "";
+        el.classList.add(type, "show");
+        setTimeout(() => el.classList.remove("show"), 3500);
     },
-    renderLoading(container, type = 'spinner') {
-        let skeletonHTML = '';
-        switch (type) {
-            case 'leaderboard':
-                skeletonHTML = `<div class="space-y-3 p-2 animate-pulse">${[...Array(5)].map(() => `<div class="flex items-center space-x-3"><div class="h-10 w-10 bg-slate-700/50 rounded-full"></div><div class="flex-1 space-y-2 py-1"><div class="h-4 bg-slate-700/50 rounded w-3/4"></div><div class="h-3 bg-slate-700/50 rounded w-1/2"></div></div></div>`).join('')}</div>`;
-                break;
-            case 'faction-leaderboard':
-                skeletonHTML = `<div class="space-y-4 animate-pulse">${[...Array(3)].map(() => `<div class="p-4 bg-slate-800/50 rounded-lg"><div class="flex justify-between items-start"><div><div class="h-5 w-32 bg-slate-700/50 rounded mb-3"></div><div class="h-3 w-40 bg-slate-700/50 rounded"></div></div><div class="text-right"><div class="h-8 w-12 bg-slate-700/50 rounded mb-2"></div><div class="h-3 w-8 bg-slate-700/50 rounded"></div></div></div></div>`).join('')}</div>`;
-                break;
-            case 'content':
-                skeletonHTML = `<div class="animate-pulse space-y-8 p-4"><div class="h-8 bg-slate-700/50 rounded w-3/4"></div><div class="space-y-4"><div class="h-4 bg-slate-700/50 rounded"></div><div class="h-4 bg-slate-700/50 rounded w-5/6"></div><div class="h-4 bg-slate-700/50 rounded w-1/2"></div></div><div class="h-40 bg-slate-800/50 rounded-lg"></div><div class="h-4 bg-slate-700/50 rounded w-3/4"></div><div class="h-4 bg-slate-700/50 rounded w-5/6"></div></div>`;
-                break;
-            default:
-                skeletonHTML = `<div class="flex justify-center items-center p-10"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-400"></div></div>`;
-        }
-        container.innerHTML = skeletonHTML;
+    renderLoading(container) { 
+        container.innerHTML = `<div class="flex justify-center items-center p-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-400"></div></div>`; 
     },
-    renderError(c, m) { c.innerHTML = `<div class="text-center p-10 text-red-400 text-lg">加载失败：${m}</div>`; },
-    renderEmpty(c, m) { c.innerHTML = `<div class="text-center p-10 text-gray-500 text-lg">${m}</div>`; },
+    renderError(c, m) { c.innerHTML = `<div class="text-center p-10 text-red-400">${m}</div>`; },
+    renderEmpty(c, m) { c.innerHTML = `<div class="text-center p-10 text-gray-500">${m}</div>`; },
+    
     switchTopLevelView(view) {
         document.querySelectorAll('#app-container > .view').forEach(v => v.classList.remove('active'));
-        this.elements.leaderboardContainer.style.display = 'none';
-        if (view === 'landing') this.elements.landingView.classList.add('active');
-        else if (view === 'auth') this.elements.authView.classList.add('active');
-        else if (view === 'profile') this.elements.profileView.classList.add('active');
-        else if (view === 'main') {
-            this.elements.mainAppView.classList.add('active');
-            this.elements.leaderboardContainer.style.display = 'block';
-            this.switchCourseView(AppState.current.courseView);
-        } else if (view === 'immersive') this.elements.immersiveView.container.classList.add('active');
+        const targetView = document.getElementById(view + '-view');
+        if (targetView) {
+            targetView.classList.add('active');
+        }
         AppState.current.topLevelView = view;
-    },
-    switchCourseView(viewName) {
-        const main = this.elements.mainAppView;
-        main.querySelector('#category-selection-view').classList.remove('active');
-        main.querySelector('#chapter-selection-view').classList.remove('active');
-        main.querySelector('#chapter-detail-view').classList.remove('active');
-        main.querySelector('#admin-management-view').classList.remove('active');
-        if (viewName === 'admin-management') main.querySelector('#admin-management-view').classList.add('active');
-        else main.querySelector('#' + viewName + '-view').classList.add('active');
-        AppState.current.courseView = viewName;
     },
 };
