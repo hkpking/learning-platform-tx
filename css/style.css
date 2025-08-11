@@ -74,7 +74,7 @@ body {
 #notification.info { background: linear-gradient(to right, #3b82f6, #6366f1); }
 #notification.show { top: 20px; }
 
-/* ==================== [NEW] LANDING VIEW STYLES ==================== */
+/* ==================== [REFACTORED] LANDING & AUTH VIEW STYLES ==================== */
 #landing-view {
     flex-direction: column;
     height: 100vh;
@@ -93,11 +93,14 @@ body {
     z-index: 1;
 }
 
-#narrative-overlay {
+#narrative-container {
     position: relative;
     z-index: 10;
+}
+
+#narrative-overlay {
     display: flex;
-    flex-direction: column;
+    flex-direction: column-reverse; /* [NEW] This places the button above the text */
     justify-content: center;
     align-items: center;
     text-align: center;
@@ -119,6 +122,12 @@ body {
 #subtitle.visible {
     opacity: 1;
 }
+
+#auth-container {
+    position: relative;
+    z-index: 10;
+}
+
 
 /* ==================== GAME LOBBY STYLES ==================== */
 #game-lobby-view {
