@@ -89,60 +89,91 @@
                 </div>
                 <div id="main-content">
                     <main>
+                        <!-- ==================== PLAYER HUB START ==================== -->
                         <section id="hub" class="min-h-screen flex items-center justify-center bg-black pt-24 pb-12">
                             <div class="container mx-auto px-4 fade-in-up">
                                 
-                                <div id="smart-nav-container" class="hidden mb-12">
-                                    <h2 class="text-3xl text-gray-300 mb-2">欢迎回来, <span id="smart-nav-username"></span>!</h2>
-                                    <div id="continue-learning-card" class="hub-card p-6 flex items-center justify-between cursor-pointer hover:bg-slate-700/50">
-                                        <div>
-                                            <p class="text-gray-400 text-sm">您的征途仍在继续</p>
-                                            <h3 id="continue-learning-title" class="text-xl font-bold text-sky-400">加载中...</h3>
-                                        </div>
-                                        <button id="continue-learning-btn" class="btn btn-primary py-3 px-6 rounded-lg">继续学习 &rarr;</button>
-                                    </div>
-                                </div>
-
-                                <div id="main-hub-title" class="text-center mb-12">
+                                <!-- Logged Out View -->
+                                <div id="hub-logged-out-view" class="text-center">
                                     <h1 class="text-5xl text-amber-100 font-calligraphy tracking-wider">天命征途</h1>
                                     <p class="text-lg text-gray-400 mt-2">星图指引，英名永存。此为汝之道，亦为汝之荣耀。</p>
-                                    <button id="new-start-btn" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg mt-8">开启征途</button>
+                                    <button id="new-start-btn" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg mt-8 text-lg">开启征途</button>
                                 </div>
-                                
-                                <div id="main-content-grid" class="grid grid-cols-1 lg:grid-cols-3 gap-8 md:gap-12">
-                                    <!-- Main Content Column -->
-                                    <div class="lg:col-span-2 space-y-8">
-                                        
-                                        <!-- ==================== UPDATED PART START ==================== -->
-                                        <!-- This section is now a clean container for dynamic challenge cards -->
-                                        <div id="challenge-section" class="space-y-6 hidden">
-                                            <h2 class="hub-title">部门挑战</h2>
-                                            <div id="active-challenge-container" class="space-y-4">
-                                                <!-- Challenge cards will be rendered here by JS -->
-                                            </div>
-                                        </div>
-                                        <!-- ===================== UPDATED PART END ===================== -->
 
-                                        <div id="course-list-container" class="space-y-6">
-                                            <!-- Course cards will be rendered here by JS -->
+                                <!-- Logged In View: The Player Hub -->
+                                <div id="hub-logged-in-view" class="hidden grid grid-cols-1 lg:grid-cols-4 gap-8">
+                                    
+                                    <!-- Left Column: Player Status Panel -->
+                                    <div class="lg:col-span-1">
+                                        <div id="player-status-panel" class="player-hub-card p-6 sticky top-24">
+                                            <div id="player-avatar" class="w-24 h-24 mx-auto rounded-full flex items-center justify-center text-4xl font-bold mb-4">
+                                                <!-- Avatar will be rendered by JS -->
+                                            </div>
+                                            <h2 id="player-name" class="text-2xl font-bold text-center text-white"></h2>
+                                            <p id="player-faction" class="text-center font-semibold mb-6"></p>
+                                            
+                                            <div class="space-y-4">
+                                                <div>
+                                                    <div class="flex justify-between items-end mb-1">
+                                                        <span class="font-semibold text-gray-300">等级</span>
+                                                        <span id="player-level" class="font-bold text-lg text-white"></span>
+                                                    </div>
+                                                    <div class="w-full bg-slate-700 rounded-full h-2.5">
+                                                        <div id="player-xp-bar" class="bg-sky-500 h-2.5 rounded-full" style="width: 0%"></div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <p class="text-gray-400 text-sm">总学分</p>
+                                                    <p id="player-points" class="text-3xl font-bold text-amber-400"></p>
+                                                </div>
+                                                <div>
+                                                    <p class="text-gray-400 text-sm">学习进度</p>
+                                                    <p id="player-progress" class="text-3xl font-bold text-emerald-400"></p>
+                                                </div>
+                                            </div>
+                                            <button id="go-to-profile-btn" class="btn w-full mt-6 bg-slate-600 hover:bg-slate-700">查看完整档案</button>
                                         </div>
                                     </div>
 
-                                    <!-- Sidebar Column -->
-                                    <div class="space-y-8">
-                                        <div class="hub-card p-8">
-                                            <h2 class="hub-title">部门榜</h2>
-                                            <div id="landing-faction-board" class="space-y-6"></div>
+                                    <!-- Middle Column: Core Tasks -->
+                                    <div class="lg:col-span-2 space-y-8">
+                                        <div id="continue-learning-card" class="player-hub-card p-6 flex flex-col items-center text-center cursor-pointer hover:border-sky-400">
+                                            <p class="text-gray-400 text-sm">主线任务</p>
+                                            <h3 id="continue-learning-title" class="text-xl font-bold text-sky-300 my-2"></h3>
+                                            <button id="continue-learning-btn" class="btn btn-primary py-3 px-8 rounded-lg mt-4">继续征途 &rarr;</button>
                                         </div>
-                                        <div class="hub-card p-8">
-                                            <h2 class="hub-title">个人榜</h2>
-                                            <div id="landing-personal-board" class="space-y-2"></div>
+                                        
+                                        <div id="challenge-section" class="hidden">
+                                             <h2 class="hub-title">部门挑战</h2>
+                                             <div id="active-challenge-container" class="space-y-4">
+                                                 <!-- Challenge cards will be rendered here by JS -->
+                                             </div>
+                                        </div>
+
+                                        <div id="course-list-container">
+                                             <h2 class="hub-title">所有篇章</h2>
+                                             <div id="hub-course-grid" class="space-y-4">
+                                                <!-- Course cards will be rendered here by JS -->
+                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Right Column: Hall of Fame (Leaderboards) -->
+                                    <div class="lg:col-span-1 space-y-8">
+                                        <div class="player-hub-card p-6">
+                                            <h2 class="hub-title">个人英雄榜</h2>
+                                            <div id="hub-personal-board" class="space-y-2"></div>
+                                        </div>
+                                        <div class="player-hub-card p-6">
+                                            <h2 class="hub-title">部门荣誉榜</h2>
+                                            <div id="hub-faction-board" class="space-y-6"></div>
                                         </div>
                                     </div>
                                 </div>
 
                             </div>
                         </section>
+                        <!-- ===================== PLAYER HUB END ===================== -->
 
                         <section class="content-section text-center">
                             <div class="fade-in-up">
@@ -178,7 +209,7 @@
 
         <section id="main-app-view" class="view flex-col">
             <header id="main-header" class="bg-slate-900/50 backdrop-blur-lg border-b border-slate-700/50 sticky top-0 z-40">
-                <div class="container mx-auto px-4 sm:px-6 lg:px-8"><div class="flex items-center justify-between h-16"><div class="flex items-center"><span class="font-bold text-xl text-white">🚀 流程管理在线学习平台</span></div><div id="user-info" class="flex items-center space-x-4 text-white"><span id="user-greeting" class="text-sm font-medium"></span><button id="profile-view-btn" class="text-sm font-medium text-sky-400 hover:text-sky-300 transition-colors" title="查看个人主页">个人主页</button><button id="admin-view-btn" class="hidden text-sm font-bold bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-full btn" title="进入管理后台">管理后台</button><button id="restart-btn" class="text-sm font-medium text-yellow-400 hover:text-yellow-300 transition-colors" title="重新学习所有课程">重新学习</button><button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded-full btn" title="退出登录">退出</button></div></div></div>
+                <div class="container mx-auto px-4 sm:px-6 lg:px-8"><div class="flex items-center justify-between h-16"><div class="flex items-center"><a href="#" id="back-to-hub-btn" class="font-bold text-xl text-white hover:text-amber-300 transition-colors">流程天命</a></div><div id="user-info" class="flex items-center space-x-4 text-white"><span id="user-greeting" class="text-sm font-medium"></span><button id="profile-view-btn" class="text-sm font-medium text-sky-400 hover:text-sky-300 transition-colors" title="查看个人主页">个人主页</button><button id="admin-view-btn" class="hidden text-sm font-bold bg-green-600 hover:bg-green-700 text-white py-1 px-3 rounded-full btn" title="进入管理后台">管理后台</button><button id="restart-btn" class="text-sm font-medium text-yellow-400 hover:text-yellow-300 transition-colors" title="重新学习所有课程">重新学习</button><button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white text-xs font-bold py-1 px-3 rounded-full btn" title="退出登录">退出</button></div></div></div>
             </header>
             <div id="learning-content-container" class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 flex-grow">
                 <div id="category-selection-view" class="view">
