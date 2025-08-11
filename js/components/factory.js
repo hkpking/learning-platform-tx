@@ -1,7 +1,20 @@
+/**
+ * @file factory.js
+ * @description Creates UI components.
+ * @version 5.0.1 - [CRITICAL FIX] Refactored quiz submission to correctly call App-level leaderboard and profile updates, and trigger achievement checks.
+ */
 import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { CourseView } from '../views/course.js';
 import { ApiService } from '../services/api.js';
+
+// Forward-declare the App object to avoid circular dependency issues.
+// The actual App object will be available on the window when this code runs.
+let App;
+window.addEventListener('load', () => {
+    App = window.App;
+});
+
 
 export const ComponentFactory = {
     createCategoryCard(category, isLocked) {
@@ -57,26 +70,20 @@ export const ComponentFactory = {
             if (selectedIdx === correctIdx) {
                 selectedOpt.classList.remove("selected"); selectedOpt.classList.add("correct");
                 
-                // Check if points for this specific quiz have already been awarded
                 if (!AppState.userProgress.awardedPointsBlocks.has(block.id)) {
                     try {
-                        // =================================================================
-                        // NEW: Check if this is the very first time the user is scoring ANY points
-                        // =================================================================
                         const isFirstScoreEver = AppState.userProgress.awardedPointsBlocks.size === 0;
 
                         UI.showNotification("回答正确! 获得 10 学分!", "success");
                         await ApiService.addPoints(AppState.user.id, 10);
-                        AppState.userProgress.awardedPointsBlocks.add(block.id); // Add to set after successful API call
-                        CourseView.updateLeaderboard();
+                        AppState.userProgress.awardedPointsBlocks.add(block.id);
+                        
+                        // [FIXED] Update the main AppState and re-render the lobby leaderboard
+                        AppState.profile.points += 10;
+                        if(App) App.renderGameLobby(true);
 
-                        // =================================================================
-                        // NEW: If it was the first score, award the achievement
-                        // =================================================================
-                        if (isFirstScoreEver) {
-                            await ApiService.awardAchievement('SCORE_FIRST_POINTS');
-                            UI.showNotification("获得成就：点石成金！", "success");
-                        }
+                        // [FIXED] Trigger achievement check after scoring points
+                        await CourseView.checkAndAwardAchievements(block.id, isFirstScoreEver);
 
                     } catch (e) {
                         UI.showNotification(e.message, "error");
