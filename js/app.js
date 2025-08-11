@@ -19,14 +19,12 @@ const App = {
         ApiService.initialize();
         ApiService.db.auth.onAuthStateChange((_event, session) => {
             if (session && session.user) {
-                // If there's a session, load data but don't auto-navigate.
-                // Let the user click "Start Journey" to proceed.
                 this.handleLogin(session.user, false); 
             } else {
                 AppState.user = null;
                 AppState.profile = null;
                 resetUserProgressState();
-                UI.showNarrative(); // If logged out, show the narrative again.
+                UI.showNarrative();
             }
         });
     },
@@ -79,7 +77,7 @@ const App = {
         UI.elements.lobby.playerInfo.addEventListener('click', () => ProfileView.showProfileView());
         UI.elements.lobby.logoutBtn.addEventListener('click', async () => {
             await ApiService.signOut();
-            UI.switchTopLevelView('landing'); // Go back to landing after sign out
+            UI.switchTopLevelView('landing'); 
         });
         UI.elements.lobby.plotTaskBtn.addEventListener('click', () => this.handleStartJourney());
         UI.elements.lobby.factionChallengeBtn.addEventListener('click', () => this.showLobbyModal('faction-challenges'));
