@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 6.0.1 - [REFACTOR] Added functions to toggle between narrative and auth form on the landing page.
+ * @version 7.0.0 - [REFACTOR] Removed obsolete lobby button elements.
  */
 import { AppState } from './state.js';
 
@@ -53,8 +53,7 @@ export const UI = {
             logoutBtn: document.getElementById('logout-btn-lobby'),
             bottomNav: document.getElementById('lobby-bottom-nav'),
             adminNavBtn: document.querySelector('.lobby-nav-btn[data-action="show-admin"]'),
-            plotTaskBtn: document.getElementById('plot-task-btn'),
-            factionChallengeBtn: document.getElementById('faction-challenge-btn'),
+            // [REMOVED] Obsolete buttons
             leaderboardTabs: document.querySelectorAll('#leaderboard-panel-lobby .tab-btn'),
             personalBoard: document.getElementById('leaderboard-content-personal'),
             factionBoard: document.getElementById('leaderboard-content-faction'),
