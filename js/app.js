@@ -15,7 +15,8 @@ import { getFactionInfo } from './constants.js';
 const App = {
     init() {
         this.bindEvents();
-        this.initLandingPageAnimation(); 
+        this.initLandingPageAnimation();
+        this.initMusicControls();
         ApiService.initialize();
         ApiService.db.auth.onAuthStateChange((_event, session) => {
             if (session && session.user) {
@@ -55,6 +56,39 @@ const App = {
             }, 1500); 
         }
         playNarrative();
+    },
+
+    initMusicControls() {
+        const music = document.getElementById('background-music');
+        const controlBtn = document.getElementById('music-control-btn');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+
+        const togglePlayback = () => {
+            if (music.paused) {
+                music.play().then(() => {
+                    playIcon.classList.add('hidden');
+                    pauseIcon.classList.remove('hidden');
+                }).catch(error => console.error("Music play failed:", error));
+            } else {
+                music.pause();
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            }
+        };
+
+        controlBtn.addEventListener('click', togglePlayback);
+
+        // Try to autoplay, but make the button visible if it fails.
+        music.play().then(() => {
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            // Fade in the button if autoplay succeeds
+            controlBtn.classList.remove('opacity-0');
+        }).catch(error => {
+            // If autoplay is blocked, just show the button with the play icon.
+            controlBtn.classList.remove('opacity-0');
+        });
     },
 
     bindEvents() {
