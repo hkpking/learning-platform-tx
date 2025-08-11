@@ -1,7 +1,7 @@
 /**
  * @file factory.js
  * @description Creates UI components.
- * @version 5.0.1 - [CRITICAL FIX] Refactored quiz submission to correctly call App-level leaderboard and profile updates, and trigger achievement checks.
+ * @version 5.0.2 - [CRITICAL FIX] Refactored quiz submission to correctly call App-level leaderboard and profile updates, and trigger achievement checks.
  */
 import { AppState } from '../state.js';
 import { UI } from '../ui.js';
@@ -19,14 +19,14 @@ window.addEventListener('load', () => {
 export const ComponentFactory = {
     createCategoryCard(category, isLocked) {
         const card = document.createElement("div");
-        card.className = `card rounded-xl overflow-hidden relative transition-all duration-300 flex flex-col ${isLocked ? 'bg-slate-800/50 cursor-not-allowed opacity-60' : 'cursor-pointer'}`;
+        card.className = `module-container rounded-xl overflow-hidden relative transition-all duration-300 flex flex-col ${isLocked ? 'bg-slate-800/50 cursor-not-allowed opacity-60' : 'cursor-pointer hover:scale-105 hover:-translate-y-1'}`;
         card.innerHTML = `<div class="p-8 flex flex-col flex-grow relative">${isLocked ? '<div class="absolute top-4 right-4 text-3xl">🔒</div>' : ''}<h2 class="text-2xl font-bold mb-2 ${isLocked ? 'text-gray-500' : 'text-emerald-400'}">${category.title}</h2><p class="mb-6 ${isLocked ? 'text-gray-600' : 'text-gray-400'} flex-grow">${category.description || ""}</p><button class="w-full text-white font-bold py-3 px-4 rounded-lg btn ${isLocked ? 'bg-gray-600 cursor-not-allowed' : 'btn-primary'} mt-auto" ${isLocked ? 'disabled' : ''}>${isLocked ? '已锁定' : '进入篇章'}</button></div>`;
         card.addEventListener("click", () => { if (!isLocked) CourseView.selectCategory(category.id); else UI.showNotification("请先完成前一个篇章的所有内容来解锁此篇章", "error"); });
         return card;
     },
     createChapterCard(chapter) {
         const card = document.createElement("div");
-        card.className = `card rounded-xl overflow-hidden relative transition-all duration-300 cursor-pointer flex flex-col`;
+        card.className = `module-container rounded-xl overflow-hidden relative transition-all duration-300 cursor-pointer flex flex-col hover:scale-105 hover:-translate-y-1`;
         card.innerHTML = `<div class="relative"><img src="${chapter.image_url || "https://placehold.co/600x400/0f172a/38bdf8?text=学习"}" alt="${chapter.title}" class="w-full h-48 object-cover"></div><div class="p-6 flex flex-col flex-grow"><h2 class="text-xl font-bold mb-2 text-white">${chapter.title}</h2><p class="mb-4 text-sm text-gray-400 flex-grow">${chapter.description || ""}</p><button class="w-full text-white font-bold py-3 px-4 rounded-lg btn bg-indigo-600 hover:bg-indigo-700 mt-auto">开始学习</button></div>`;
         card.querySelector("button").addEventListener("click", () => CourseView.selectChapter(chapter.id));
         return card;
@@ -80,10 +80,14 @@ export const ComponentFactory = {
                         
                         // [FIXED] Update the main AppState and re-render the lobby leaderboard
                         AppState.profile.points += 10;
-                        if(App) App.renderGameLobby(true);
+                        if(App) {
+                            const updatedLeaderboard = await ApiService.fetchLeaderboard();
+                            AppState.leaderboard = updatedLeaderboard;
+                            App.renderGameLobby(true);
+                        }
 
                         // [FIXED] Trigger achievement check after scoring points
-                        await CourseView.checkAndAwardAchievements(block.id, isFirstScoreEver);
+                        await CourseView.checkAndAwardAchievements(block.id, true); // Pass true for isFirstScore check
 
                     } catch (e) {
                         UI.showNotification(e.message, "error");
