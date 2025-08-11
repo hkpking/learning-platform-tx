@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 4.0.2 - Bug fixes for lobby modals and admin button.
+ * @version 4.0.3 - [FIX] Added logic to show admin button and updated main app header upon data load.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -151,6 +151,11 @@ const App = {
             AppState.activeChallenges = challenges;
             AppState.leaderboard = personalLb;
             AppState.factionLeaderboard = factionLb;
+
+            // [FIX] Update the main app header with user info and admin button visibility
+            // This ensures it's correct before the user even navigates to the main learning view.
+            UI.elements.mainApp.userGreeting.textContent = `欢迎, ${AppState.profile.username || AppState.user.email.split('@')[0]}`;
+            UI.elements.mainApp.adminViewBtn.classList.toggle('hidden', AppState.profile.role !== 'admin');
 
             this.flattenLearningStructure();
             this.renderGameLobby(true);
