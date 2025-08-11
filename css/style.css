@@ -18,16 +18,31 @@ body {
     position: relative; 
 }
 
+/* Base rule for top-level views */
 #app-container > section.view { 
     display: none; 
     width: 100%;
     min-height: 100vh;
 }
 
+/* Rule for the active top-level view */
 #app-container > section.view.active { 
     display: flex; 
     animation: fadeIn 0.5s ease-in-out; 
 }
+
+/* * [FIX] Added rules for nested views inside the main learning area.
+ * This ensures that only one sub-view (like categories, chapters, or details)
+ * is visible at a time, fixing the layout issue.
+*/
+#main-app-view .view {
+    display: none;
+}
+#main-app-view .view.active {
+    display: block; /* Use block display for these content sections */
+    animation: fadeIn 0.4s ease-in-out;
+}
+
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
