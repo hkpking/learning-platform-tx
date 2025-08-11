@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 6.0.2 - [REFACTOR] Implemented seamless auth flow within the landing page.
+ * @version 7.0.0 - [REFACTOR] Lobby UI simplified, actions moved to bottom nav.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -79,18 +79,20 @@ const App = {
             await ApiService.signOut();
             UI.switchTopLevelView('landing'); 
         });
-        UI.elements.lobby.plotTaskBtn.addEventListener('click', () => this.handleStartJourney());
-        UI.elements.lobby.factionChallengeBtn.addEventListener('click', () => this.showLobbyModal('faction-challenges'));
+
+        // [MODIFIED] Centralized bottom nav event handling
         UI.elements.lobby.bottomNav.addEventListener('click', (e) => {
             const button = e.target.closest('.lobby-nav-btn');
             if (!button || !AppState.user) return;
             const action = button.dataset.action;
             switch(action) {
-                case 'show-all-quests': this.showLobbyModal('all-quests'); break;
+                case 'start-journey': this.handleStartJourney(); break;
+                case 'show-faction-challenges': this.showLobbyModal('faction-challenges'); break;
                 case 'show-profile': ProfileView.showProfileView(); break;
                 case 'show-admin': AdminView.showAdminView(); break;
             }
         });
+
         UI.elements.lobby.leaderboardTabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.dataset.tab;
@@ -196,8 +198,7 @@ const App = {
             lobby.playerLevel.textContent = level;
             lobby.logoutBtn.classList.remove('hidden');
             lobby.adminNavBtn.style.display = profile.role === 'admin' ? 'flex' : 'none';
-            const firstUncompleted = AppState.learningMap.flatStructure.find(b => !AppState.userProgress.completedBlocks.has(b.id));
-            lobby.plotTaskBtn.querySelector('#plot-task-title').textContent = firstUncompleted ? '继续征途' : '已完成';
+            // [REMOVED] Logic for the old plot task button
             this.renderLeaderboards();
         } else {
             lobby.avatar.textContent = '?';
@@ -206,7 +207,6 @@ const App = {
             lobby.playerLevel.textContent = '??';
             lobby.logoutBtn.classList.add('hidden');
             lobby.adminNavBtn.style.display = 'none';
-            lobby.plotTaskBtn.querySelector('#plot-task-title').textContent = '开启征途';
             UI.renderEmpty(lobby.personalBoard, '登录后查看排名');
             UI.renderEmpty(lobby.factionBoard, '登录后查看排名');
         }
