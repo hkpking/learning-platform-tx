@@ -63,6 +63,7 @@ const App = {
         const controlBtn = document.getElementById('music-control-btn');
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
+        const landingView = document.getElementById('landing-view');
 
         const togglePlayback = () => {
             if (music.paused) {
@@ -79,16 +80,48 @@ const App = {
 
         controlBtn.addEventListener('click', togglePlayback);
 
-        // Try to autoplay, but make the button visible if it fails.
-        music.play().then(() => {
-            playIcon.classList.add('hidden');
-            pauseIcon.classList.remove('hidden');
-            // Fade in the button if autoplay succeeds
-            controlBtn.classList.remove('opacity-0');
-        }).catch(error => {
-            // If autoplay is blocked, just show the button with the play icon.
-            controlBtn.classList.remove('opacity-0');
+        // Autoplay logic
+        const attemptAutoplay = () => {
+            music.play().then(() => {
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+            }).catch(() => {
+                // Autoplay was blocked, user must click.
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+            });
+        };
+
+        // Observer to control visibility and playback based on view
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach(mutation => {
+                if (mutation.attributeName === 'class') {
+                    const isLandingActive = landingView.classList.contains('active');
+                    if (isLandingActive) {
+                        controlBtn.classList.remove('opacity-0');
+                        controlBtn.classList.remove('pointer-events-none');
+                    } else {
+                        music.pause();
+                        playIcon.classList.remove('hidden');
+                        pauseIcon.classList.add('hidden');
+                        controlBtn.classList.add('opacity-0');
+                        controlBtn.classList.add('pointer-events-none');
+                    }
+                }
+            });
         });
+
+        observer.observe(landingView, { attributes: true });
+
+        // Initial check
+        if (landingView.classList.contains('active')) {
+            controlBtn.classList.remove('opacity-0');
+            controlBtn.classList.remove('pointer-events-none');
+            attemptAutoplay();
+        } else {
+            controlBtn.classList.add('opacity-0');
+            controlBtn.classList.add('pointer-events-none');
+        }
     },
 
     bindEvents() {
