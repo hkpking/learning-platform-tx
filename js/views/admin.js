@@ -1,3 +1,8 @@
+/**
+ * @file admin.js
+ * @description Manages all logic for the admin panel.
+ * @version 5.0.1 - [CRITICAL FIX] Refactored event handling to be more specific and robust, fixing unresponsive buttons and navigation.
+ */
 import { AppState } from '../state.js';
 import { UI } from '../ui.js';
 import { ApiService } from '../services/api.js';
@@ -11,41 +16,47 @@ export const AdminView = {
         
         const { admin, deleteConfirmModal } = UI.elements;
         
-        // Bind events for the admin panel
-        admin.backToLobbyBtn?.addEventListener('click', () => {
-            UI.switchTopLevelView('game-lobby');
-        });
-
-        // Event delegation for dynamic content
-        admin.container.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (!button) return;
-
-            const { action, id, type } = button.dataset;
-            
-            // Main navigation
-            if (action === 'admin-view') {
-                const view = button.dataset.adminView;
-                this.handleAdminNav(view, button);
-                return;
+        // --- Main Navigation & Back Button ---
+        admin.backToLobbyBtn?.addEventListener('click', () => UI.switchTopLevelView('game-lobby'));
+        admin.adminNav?.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-admin-view]');
+            if (button) {
+                this.handleAdminNav(button.dataset.adminView, button);
             }
-
-            // List actions
-            this.handleListAction(action, id, type, button);
         });
+
+        // --- "Add New" Buttons ---
+        admin.addCategoryBtn?.addEventListener('click', () => this.openModal('category'));
+        admin.addChapterBtn?.addEventListener('click', () => this.openModal('chapter'));
+        admin.addSectionBtn?.addEventListener('click', () => this.openModal('section'));
+        admin.addNewBlockBtn?.addEventListener('click', () => this.openModal('block'));
+        admin.addChallengeBtn?.addEventListener('click', () => this.openModal('challenge'));
+
+        // --- Event Delegation for Dynamic List Content ---
+        const setupListListener = (element, type) => {
+            element?.addEventListener('click', (e) => this.handleListClick(e, type));
+        };
+        setupListListener(admin.categoriesTableContainer, 'category');
+        setupListListener(admin.chaptersTableContainer, 'chapter');
+        setupListListener(admin.sectionsTableContainer, 'section');
+        setupListListener(admin.blocksList, 'block');
+        setupListListener(admin.challengesTableContainer, 'challenge');
         
-        // Breadcrumb navigation
+        // --- Other Listeners ---
         admin.breadcrumb?.addEventListener('click', (e) => this.handleBreadcrumbClick(e));
-        
-        // Modal buttons
         admin.modal.saveBtn?.addEventListener('click', () => this.handleSave());
         admin.modal.cancelBtn?.addEventListener('click', () => this.closeModal());
-        
-        // Delete confirmation
         deleteConfirmModal.confirmBtn?.addEventListener('click', () => this.confirmDeletion());
         deleteConfirmModal.cancelBtn?.addEventListener('click', () => this.hideDeleteConfirmation());
 
         this._isInitialized = true;
+    },
+
+    handleListClick(e, context) {
+        const button = e.target.closest('button[data-action]');
+        if (!button) return;
+        const { action, id, type } = button.dataset;
+        this.handleListAction(action, id, type || context);
     },
 
     handleAdminNav(view, button) {
@@ -58,7 +69,7 @@ export const AdminView = {
         }
     },
 
-    handleListAction(action, id, type, button) {
+    handleListAction(action, id, type) {
         let item;
         switch(type) {
             case 'category': item = AppState.admin.categories.find(c => c.id === id); break;
@@ -75,20 +86,18 @@ export const AdminView = {
             case 'edit': if(item) this.openModal(type, item); break;
             case 'delete': if(item) this.showDeleteConfirmation(type, id, item.title); break;
             case 'end-challenge': if(item) this.handleEndChallenge(id, item.title); break;
-            case 'add': this.openModal(type); break;
         }
     },
 
     async showAdminView() { 
         this.init();
-        UI.switchTopLevelView('main-app'); 
-        UI.switchCourseView('admin-management-view'); 
+        UI.switchTopLevelView('admin'); 
         this.showCategoryList(); 
     },
 
     switchAdminSubView(view) {
         const { categoryListView, chapterListView, sectionListView, blockEditorView, challengesListView } = UI.elements.admin;
-        [categoryListView, chapterListView, sectionListView, blockEditorView, challengesListView].forEach(v => v.classList.add('hidden'));
+        [categoryListView, chapterListView, sectionListView, blockEditorView, challengesListView].forEach(v => v?.classList.add('hidden'));
         
         const viewToShow = UI.elements.admin[view];
         if(viewToShow) viewToShow.classList.remove('hidden');
@@ -113,7 +122,7 @@ export const AdminView = {
         const container = UI.elements.admin.categoriesTableContainer;
         const cats = AppState.admin.categories;
         if (!cats || cats.length === 0) { UI.renderEmpty(container, '没有篇章。请添加一个新篇章。'); return; }
-        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">顺序</th><th class="px-6 py-3">标题</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${cats.map(c => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${c.order}</td><td class="px-6 py-4 font-medium text-gray-900">${c.title}</td><td class="px-6 py-4 text-right space-x-2"><button data-action="view-chapters" data-type="category" data-id="${c.id}" class="font-medium text-blue-600 hover:underline">管理章节</button><button data-action="edit" data-type="category" data-id="${c.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-type="category" data-id="${c.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
+        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">顺序</th><th class="px-6 py-3">标题</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${cats.map(c => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${c.order}</td><td class="px-6 py-4 font-medium text-gray-900">${c.title}</td><td class="px-6 py-4 text-right space-x-2"><button data-action="view-chapters" data-id="${c.id}" class="font-medium text-blue-600 hover:underline">管理章节</button><button data-action="edit" data-id="${c.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-id="${c.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
     },
     
     showChapterList(cat) { AppState.admin.selectedCategory = cat; this.switchAdminSubView('chapterListView'); UI.elements.admin.chapterListTitle.textContent = `章节管理: ${cat.title}`; this.renderChapterList(); },
@@ -121,7 +130,7 @@ export const AdminView = {
         const container = UI.elements.admin.chaptersTableContainer;
         const chapters = AppState.admin.selectedCategory.chapters || [];
         if (chapters.length === 0) { UI.renderEmpty(container, '没有章节。'); return; }
-        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">顺序</th><th class="px-6 py-3">标题</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${chapters.map(c => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${c.order}</td><td class="px-6 py-4 font-medium text-gray-900">${c.title}</td><td class="px-6 py-4 text-right space-x-2"><button data-action="view-sections" data-type="chapter" data-id="${c.id}" class="font-medium text-blue-600 hover:underline">管理小节</button><button data-action="edit" data-type="chapter" data-id="${c.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-type="chapter" data-id="${c.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
+        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">顺序</th><th class="px-6 py-3">标题</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${chapters.map(c => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${c.order}</td><td class="px-6 py-4 font-medium text-gray-900">${c.title}</td><td class="px-6 py-4 text-right space-x-2"><button data-action="view-sections" data-id="${c.id}" class="font-medium text-blue-600 hover:underline">管理小节</button><button data-action="edit" data-id="${c.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-id="${c.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
     },
 
     showSectionList(chap) { AppState.admin.selectedChapter = chap; this.switchAdminSubView('sectionListView'); UI.elements.admin.sectionListTitle.textContent = `小节管理: ${chap.title}`; this.renderSectionList(); },
@@ -129,7 +138,7 @@ export const AdminView = {
         const container = UI.elements.admin.sectionsTableContainer;
         const sections = AppState.admin.selectedChapter.sections || [];
         if (sections.length === 0) { UI.renderEmpty(container, '没有小节。'); return; }
-        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">顺序</th><th class="px-6 py-3">标题</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${sections.map(s => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${s.order}</td><td class="px-6 py-4 font-medium text-gray-900">${s.title}</td><td class="px-6 py-4 text-right space-x-2"><button data-action="view-blocks" data-type="section" data-id="${s.id}" class="font-medium text-blue-600 hover:underline">管理内容块</button><button data-action="edit" data-type="section" data-id="${s.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-type="section" data-id="${s.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
+        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">顺序</th><th class="px-6 py-3">标题</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${sections.map(s => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4">${s.order}</td><td class="px-6 py-4 font-medium text-gray-900">${s.title}</td><td class="px-6 py-4 text-right space-x-2"><button data-action="view-blocks" data-id="${s.id}" class="font-medium text-blue-600 hover:underline">管理内容块</button><button data-action="edit" data-id="${s.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-id="${s.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
     },
 
     showBlockEditor(sec) { AppState.admin.selectedSection = sec; this.switchAdminSubView('blockEditorView'); UI.elements.admin.editorSectionTitle.textContent = `内容块管理: ${sec.title}`; this.renderBlockList(); },
@@ -143,7 +152,7 @@ export const AdminView = {
             el.className = 'bg-white p-4 rounded-lg shadow flex justify-between items-start';
             let type = '内容';
             if(block.quiz_question) type = '测验'; else if(block.document_url) type = '文档'; else if(block.video_url) type = '视频';
-            el.innerHTML = `<div><div class="font-bold text-lg text-gray-800">${block.order}. ${block.title}</div><div class="text-sm text-gray-500 mt-1">类型: ${type}</div></div><div class="flex-shrink-0 ml-4 space-x-2"><button data-action="edit" data-type="block" data-id="${block.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-type="block" data-id="${block.id}" class="font-medium text-red-600 hover:underline">删除</button></div>`;
+            el.innerHTML = `<div><div class="font-bold text-lg text-gray-800">${block.order}. ${block.title}</div><div class="text-sm text-gray-500 mt-1">类型: ${type}</div></div><div class="flex-shrink-0 ml-4 space-x-2"><button data-action="edit" data-id="${block.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-id="${block.id}" class="font-medium text-red-600 hover:underline">删除</button></div>`;
             container.appendChild(el);
         });
     },
@@ -161,7 +170,7 @@ export const AdminView = {
     renderChallengesList(challenges) {
         const container = UI.elements.admin.challengesTableContainer;
         if (!challenges || challenges.length === 0) { UI.renderEmpty(container, '没有挑战。请添加一个新挑战。'); return; }
-        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">标题</th><th class="px-6 py-3">目标篇章</th><th class="px-6 py-3">状态</th><th class="px-6 py-3">奖励</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${challenges.map(c => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${c.title}</td><td class="px-6 py-4">${c.target_category_title || '无'}</td><td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${c.is_active ? '活跃中' : '已关闭'}</span></td><td class="px-6 py-4">${c.reward_points} 分</td><td class="px-6 py-4 text-right space-x-2">${c.is_active ? `<button data-action="end-challenge" data-type="challenge" data-id="${c.id}" class="font-medium text-green-600 hover:underline">结算</button>` : ''}<button data-action="edit" data-type="challenge" data-id="${c.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-type="challenge" data-id="${c.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
+        container.innerHTML = `<table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">标题</th><th class="px-6 py-3">目标篇章</th><th class="px-6 py-3">状态</th><th class="px-6 py-3">奖励</th><th class="px-6 py-3 text-right">操作</th></tr></thead><tbody>${challenges.map(c => `<tr class="bg-white border-b hover:bg-gray-50"><td class="px-6 py-4 font-medium text-gray-900">${c.title}</td><td class="px-6 py-4">${c.target_category_title || '无'}</td><td class="px-6 py-4"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${c.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">${c.is_active ? '活跃中' : '已关闭'}</span></td><td class="px-6 py-4">${c.reward_points} 分</td><td class="px-6 py-4 text-right space-x-2">${c.is_active ? `<button data-action="end-challenge" data-id="${c.id}" class="font-medium text-green-600 hover:underline">结算</button>` : ''}<button data-action="edit" data-id="${c.id}" class="font-medium text-indigo-600 hover:underline">编辑</button><button data-action="delete" data-id="${c.id}" class="font-medium text-red-600 hover:underline">删除</button></td></tr>`).join('')}</tbody></table>`;
     },
 
     updateBreadcrumb() {
@@ -197,17 +206,7 @@ export const AdminView = {
             case 'challenge':
                 modal.title.textContent = item ? '编辑挑战' : '新增挑战';
                 const categoryOptions = AppState.admin.categories.map(c => `<option value="${c.id}" ${v('target_category_id') === c.id ? 'selected' : ''}>${c.title}</option>`).join('');
-                formHtml = `
-                    <div><label class="admin-label">标题</label><input name="title" class="admin-input" value="${v('title')}" required></div>
-                    <div><label class="admin-label">描述</label><textarea name="description" class="admin-textarea" rows="3">${v('description')}</textarea></div>
-                    <div><label class="admin-label">目标篇章</label><select name="target_category_id" class="admin-select" required><option value="">选择篇章</option>${categoryOptions}</select></div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div><label class="admin-label">开始时间</label><input name="start_date" type="datetime-local" class="admin-input" value="${v('start_date', new Date().toISOString().substring(0, 16))}" required></div>
-                        <div><label class="admin-label">结束时间</label><input name="end_date" type="datetime-local" class="admin-input" value="${v('end_date', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 16))}" required></div>
-                    </div>
-                    <div><label class="admin-label">奖励积分</label><input name="reward_points" type="number" class="admin-input" value="${v('reward_points', 0)}" required></div>
-                    <div class="flex items-center space-x-2"><input id="is_active" name="is_active" type="checkbox" class="admin-checkbox" ${v('is_active', true) ? 'checked' : ''}><label for="is_active" class="admin-label">是否活跃</label></div>
-                `;
+                formHtml = `<div><label class="admin-label">标题</label><input name="title" class="admin-input" value="${v('title')}" required></div><div><label class="admin-label">描述</label><textarea name="description" class="admin-textarea" rows="3">${v('description')}</textarea></div><div><label class="admin-label">目标篇章</label><select name="target_category_id" class="admin-select" required><option value="">选择篇章</option>${categoryOptions}</select></div><div class="grid grid-cols-2 gap-4"><div><label class="admin-label">开始时间</label><input name="start_date" type="datetime-local" class="admin-input" value="${v('start_date', new Date().toISOString().substring(0, 16))}" required></div><div><label class="admin-label">结束时间</label><input name="end_date" type="datetime-local" class="admin-input" value="${v('end_date', new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().substring(0, 16))}" required></div></div><div><label class="admin-label">奖励积分</label><input name="reward_points" type="number" class="admin-input" value="${v('reward_points', 0)}" required></div><div class="flex items-center space-x-2"><input id="is_active" name="is_active" type="checkbox" class="admin-checkbox" ${v('is_active', true) ? 'checked' : ''}><label for="is_active" class="admin-label">是否活跃</label></div>`;
                 break;
         }
         modal.form.innerHTML = formHtml; 
@@ -280,7 +279,7 @@ export const AdminView = {
                 UI.showNotification('正在结算挑战...', 'info');
                 await ApiService.finishChallenge(challengeId);
                 UI.showNotification('挑战结算成功！', 'success');
-                await this.showChallengesList(); // 重新加载挑战列表
+                await this.showChallengesList();
             } catch (error) {
                 UI.showNotification(error.message, 'error');
             }
