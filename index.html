@@ -69,18 +69,15 @@
 
             <!-- Floating UI Elements -->
             <div id="lobby-main-content">
-                <!-- Main Quest Button -->
                 <button id="plot-task-btn" class="lobby-main-button">
                     <span id="plot-task-title">开启征途</span>
                     <span id="plot-task-subtitle">主线剧情</span>
                 </button>
 
-                <!-- Faction Challenge Button -->
                 <button id="faction-challenge-btn" class="lobby-side-button">
                     <span>阵营挑战</span>
                 </button>
 
-                <!-- Leaderboard Panel -->
                 <div id="leaderboard-panel-lobby" class="lobby-side-panel">
                     <div class="panel-tabs">
                         <button class="tab-btn active" data-tab="personal">个人榜</button>
@@ -106,6 +103,21 @@
                     <span>管理</span>
                 </button>
             </nav>
+
+            <!-- Lobby Modals -->
+            <div id="lobby-modal-backdrop" class="fixed inset-0 bg-black bg-opacity-70 z-20 hidden items-center justify-center">
+                <!-- All Quests Modal -->
+                <div id="all-quests-modal" class="lobby-modal-content hidden">
+                    <h2 class="modal-title">所有任务</h2>
+                    <div id="all-quests-content" class="modal-body"></div>
+                </div>
+                <!-- Faction Challenges Modal -->
+                <div id="faction-challenges-modal" class="lobby-modal-content hidden">
+                    <h2 class="modal-title">阵营挑战</h2>
+                    <div id="faction-challenges-content" class="modal-body"></div>
+                </div>
+            </div>
+
         </section>
         <!-- ===================== GAME LOBBY VIEW END ===================== -->
 
