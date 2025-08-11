@@ -13,6 +13,17 @@
 </head>
 <body class="text-gray-200">
 
+    <!-- [NEW] Background Music Element -->
+    <audio id="background-music" loop>
+        <source src="https://down.xjio.cn/filedown/270f9059bd43493aa6855d1ef33229ba/游戏科学-黑神话：悟空(纯音乐).mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放。
+    </audio>
+
+    <!-- [NEW] Music Control Button -->
+    <button id="music-control-btn" class="fixed bottom-4 right-4 z-50 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors opacity-0" title="控制音乐">
+        <!-- SVG icon will be toggled via JS -->
+    </button>
+
     <div id="notification"></div>
 
     <!-- Faction Selection Modal -->
@@ -48,16 +59,13 @@
             <div class="ken-burns-bg"></div>
             <header class="fixed top-0 left-0 right-0 z-20 bg-transparent">
                 <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-                    <!-- Top-left title is now more subtle -->
                     <div class="text-lg font-bold text-white/70 font-calligraphy tracking-widest">流程天命</div>
                     <button id="landing-login-btn" class="text-white font-semibold hover:text-amber-400 transition-colors">登录 / 注册</button>
                 </div>
             </header>
             
-            <!-- Narrative and Journey Button Container -->
             <div id="narrative-container" class="w-full h-full flex items-center justify-center">
                 <div id="narrative-overlay">
-                    <!-- [NEW] Main Game Title -->
                     <div class="main-title mb-10 text-center">
                         <h1 class="text-6xl md:text-8xl font-calligraphy">流程天命</h1>
                         <p class="text-xl md:text-2xl text-gray-200 mt-2 tracking-widest opacity-90">英雄之旅</p>
@@ -68,7 +76,6 @@
                 </div>
             </div>
 
-            <!-- Auth Form Container (hidden by default) -->
             <div id="auth-container" class="w-full h-full hidden items-center justify-center p-4">
                  <div class="w-full max-w-md">
                     <div class="text-center mb-8"><button id="back-to-landing-btn" class="text-blue-400 hover:text-blue-300">&larr; 返回主页</button></div>
@@ -87,9 +94,8 @@
                 </div>
             </div>
             
-            <!-- [NEW] Footer Signature -->
             <footer class="absolute bottom-0 left-0 right-0 p-4 text-center text-gray-400 text-sm z-10">
-                <p>数字化管理中心 2025 </p>
+                <p>数字化管理中心</p>
             </footer>
         </section>
 
