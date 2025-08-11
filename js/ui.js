@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 5.0.1 - [FIX] Corrected switchCourseView to properly append '-view' to the ID, fixing nested view navigation.
+ * @version 5.0.2 - [FIX] Added specific selectors for all admin "Add" buttons to enable more robust event handling.
  */
 import { AppState } from './state.js';
 
@@ -87,17 +87,22 @@ export const UI = {
             adminNav: document.querySelector('#admin-view nav'),
             categoryListView: document.getElementById('admin-category-list-view'),
             categoriesTableContainer: document.getElementById('admin-categories-table-container'),
+            addCategoryBtn: document.getElementById('admin-add-category-btn'),
             chapterListView: document.getElementById('admin-chapter-list-view'),
             chapterListTitle: document.getElementById('admin-chapter-list-title'),
             chaptersTableContainer: document.getElementById('admin-chapters-table-container'),
+            addChapterBtn: document.getElementById('admin-add-chapter-btn'),
             sectionListView: document.getElementById('admin-section-list-view'),
             sectionListTitle: document.getElementById('admin-section-list-title'),
             sectionsTableContainer: document.getElementById('admin-sections-table-container'),
+            addSectionBtn: document.getElementById('admin-add-section-btn'),
             blockEditorView: document.getElementById('admin-block-editor-view'),
             editorSectionTitle: document.getElementById('admin-editor-section-title'),
             blocksList: document.getElementById('admin-blocks-list'),
+            addNewBlockBtn: document.getElementById('admin-add-new-block-btn'),
             challengesListView: document.getElementById('admin-challenges-list-view'),
             challengesTableContainer: document.getElementById('admin-challenges-table-container'),
+            addChallengeBtn: document.getElementById('admin-add-challenge-btn'),
             modal: {
                 backdrop: document.getElementById('admin-modal-backdrop'),
                 container: document.getElementById('form-modal'),
@@ -131,7 +136,6 @@ export const UI = {
     switchCourseView(viewName) {
         const container = this.elements.mainAppView;
         container.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        // [FIXED] Correctly append '-view' to find the element by its full ID
         const targetView = document.getElementById(viewName + '-view');
         if (targetView) {
             targetView.classList.add('active');
