@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 6.0.1 - [FIX] Adjusted landing page animation to show button immediately and loop text animation.
+ * @version 6.0.2 - [REFACTOR] Implemented seamless auth flow within the landing page.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -19,12 +19,14 @@ const App = {
         ApiService.initialize();
         ApiService.db.auth.onAuthStateChange((_event, session) => {
             if (session && session.user) {
-                this.handleLogin(session.user);
+                // If there's a session, load data but don't auto-navigate.
+                // Let the user click "Start Journey" to proceed.
+                this.handleLogin(session.user, false); 
             } else {
                 AppState.user = null;
                 AppState.profile = null;
                 resetUserProgressState();
-                UI.switchTopLevelView('landing');
+                UI.showNarrative(); // If logged out, show the narrative again.
             }
         });
     },
@@ -59,21 +61,26 @@ const App = {
 
     bindEvents() {
         // --- Landing View Events ---
-        UI.elements.landing.loginBtn.addEventListener('click', () => UI.switchTopLevelView('auth'));
+        UI.elements.landing.loginBtn.addEventListener('click', () => UI.showAuthForm());
         UI.elements.landing.startJourneyBtn.addEventListener('click', () => {
             if (AppState.user) {
                 UI.switchTopLevelView('game-lobby');
             } else {
-                UI.switchTopLevelView('auth');
+                UI.showAuthForm();
             }
         });
 
-        // --- Auth View Events ---
-        UI.elements.auth.backToLandingBtn.addEventListener('click', () => UI.switchTopLevelView('landing'));
+        // --- Auth Form Events (now on landing page) ---
+        UI.elements.auth.backToLandingBtn.addEventListener('click', () => UI.showNarrative());
+        UI.elements.auth.form.addEventListener('submit', (e) => AuthView.handleAuthSubmit(e));
+        UI.elements.auth.switchBtn.addEventListener('click', (e) => AuthView.switchAuthMode(e));
         
-        // ... (rest of the bindEvents function remains the same) ...
+        // --- Game Lobby Events ---
         UI.elements.lobby.playerInfo.addEventListener('click', () => ProfileView.showProfileView());
-        UI.elements.lobby.logoutBtn.addEventListener('click', () => ApiService.signOut());
+        UI.elements.lobby.logoutBtn.addEventListener('click', async () => {
+            await ApiService.signOut();
+            UI.switchTopLevelView('landing'); // Go back to landing after sign out
+        });
         UI.elements.lobby.plotTaskBtn.addEventListener('click', () => this.handleStartJourney());
         UI.elements.lobby.factionChallengeBtn.addEventListener('click', () => this.showLobbyModal('faction-challenges'));
         UI.elements.lobby.bottomNav.addEventListener('click', (e) => {
@@ -98,8 +105,8 @@ const App = {
         document.getElementById('lobby-modal-backdrop').addEventListener('click', (e) => {
             if (e.target.id === 'lobby-modal-backdrop') this.hideLobbyModal();
         });
-        UI.elements.auth.form.addEventListener('submit', (e) => AuthView.handleAuthSubmit(e));
-        UI.elements.auth.switchBtn.addEventListener('click', (e) => AuthView.switchAuthMode(e));
+
+        // --- Other View Events ---
         UI.elements.mainApp.backToHubBtn.addEventListener('click', (e) => { e.preventDefault(); UI.switchTopLevelView('game-lobby'); });
         UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView());
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
@@ -116,9 +123,9 @@ const App = {
         });
     },
 
-    async handleLogin(user) {
+    async handleLogin(user, navigate = true) {
         if (AppState.user && AppState.user.id === user.id) {
-            UI.switchTopLevelView('game-lobby');
+            if(navigate) UI.switchTopLevelView('game-lobby');
             return;
         }
         resetUserProgressState();
@@ -131,7 +138,7 @@ const App = {
                 this.showFactionSelection();
             } else {
                 await this.loadMainAppData();
-                UI.switchTopLevelView('game-lobby');
+                if(navigate) UI.switchTopLevelView('game-lobby');
             }
         } catch (error) {
             console.error("Login process failed:", error);
@@ -156,11 +163,9 @@ const App = {
             AppState.activeChallenges = challenges;
             AppState.leaderboard = personalLb;
             AppState.factionLeaderboard = factionLb;
-
             this.flattenLearningStructure();
             this.updateHeaders();
             this.renderGameLobby(true);
-            
         } catch (error) {
             console.error("Failed to load main app data:", error);
             UI.showNotification(`加载数据失败: ${error.message}`, 'error');
@@ -234,7 +239,7 @@ const App = {
     
     handleStartJourney() {
         if (!AppState.user) {
-            UI.switchTopLevelView('auth');
+            UI.showAuthForm();
             return;
         }
         UI.switchTopLevelView('main-app');
