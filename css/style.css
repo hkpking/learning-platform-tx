@@ -128,7 +128,7 @@ body {
     z-index: 10;
 }
 
-/* [NEW] Main Title Styles */
+/* Main Title Styles */
 .main-title h1 {
     font-weight: 900;
     color: #fde047; /* A rich gold color */
@@ -145,7 +145,28 @@ body {
     }
 }
 
-/* [NEW] Footer Styles */
+/* [NEW] Pulsing animation for the main call-to-action button */
+#start-journey-btn {
+    animation: button-pulse-glow 2.5s infinite ease-in-out;
+}
+
+@keyframes button-pulse-glow {
+    0% {
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.5), 0 0 10px rgba(245, 158, 11, 0.4);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(251, 191, 36, 0.8), 0 0 35px rgba(245, 158, 11, 0.7);
+        transform: scale(1.03);
+    }
+    100% {
+        box-shadow: 0 0 5px rgba(251, 191, 36, 0.5), 0 0 10px rgba(245, 158, 11, 0.4);
+        transform: scale(1);
+    }
+}
+
+
+/* Footer Styles */
 #landing-view footer {
     background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
 }
