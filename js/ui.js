@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 5.0.2 - [FIX] Added specific selectors for all admin "Add" buttons to enable more robust event handling.
+ * @version 6.0.0 - [REFACTOR] Added selectors for the new landing view.
  */
 import { AppState } from './state.js';
 
@@ -14,6 +14,7 @@ export const UI = {
         deleteConfirmModal: { container: document.getElementById('delete-confirm-modal'), message: document.getElementById('delete-confirm-message'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
 
         // --- Top-Level View Containers ---
+        landingView: document.getElementById('landing-view'),
         gameLobbyView: document.getElementById('game-lobby-view'),
         authView: document.getElementById('auth-view'),
         mainAppView: document.getElementById('main-app-view'),
@@ -21,6 +22,13 @@ export const UI = {
         profileView: document.getElementById('profile-view'),
         immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
         
+        // --- [NEW] Landing View Elements ---
+        landing: {
+            loginBtn: document.getElementById('landing-login-btn'),
+            startJourneyBtn: document.getElementById('start-journey-btn'),
+            subtitle: document.getElementById('subtitle'),
+        },
+
         // --- Game Lobby Elements ---
         lobby: {
             playerInfo: document.getElementById('lobby-player-info'),
@@ -31,7 +39,6 @@ export const UI = {
             bottomNav: document.getElementById('lobby-bottom-nav'),
             adminNavBtn: document.querySelector('.lobby-nav-btn[data-action="show-admin"]'),
             plotTaskBtn: document.getElementById('plot-task-btn'),
-            plotTaskTitle: document.getElementById('plot-task-title'),
             factionChallengeBtn: document.getElementById('faction-challenge-btn'),
             leaderboardTabs: document.querySelectorAll('#leaderboard-panel-lobby .tab-btn'),
             personalBoard: document.getElementById('leaderboard-content-personal'),
@@ -40,7 +47,7 @@ export const UI = {
 
         // --- Auth View Elements ---
         auth: {
-            backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
+            backToLandingBtn: document.getElementById('back-to-landing-btn'),
             form: document.getElementById('auth-form'),
             title: document.getElementById('form-title'),
             submitBtn: document.getElementById('submit-btn'),
