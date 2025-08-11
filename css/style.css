@@ -73,7 +73,58 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 .fade-in-up { opacity: 0; transform: translateY(80px); transition: opacity 1.2s cubic-bezier(0.19, 1, 0.22, 1), transform 1.2s cubic-bezier(0.19, 1, 0.22, 1); }
 .is-visible { opacity: 1; transform: translateY(0); }
 
-/* --- Hub Styles --- */
+/* ==================== PLAYER HUB STYLES START ==================== */
+.player-hub-card {
+    background: rgba(30, 41, 59, 0.6); /* slate-800 with opacity */
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(55, 65, 81, 0.6); /* gray-700 with opacity */
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.05);
+    transition: all 0.3s ease;
+}
+
+.player-hub-card:hover {
+    border-color: rgba(59, 130, 246, 0.5); /* blue-500 with opacity */
+    transform: translateY(-4px);
+}
+
+.hub-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    text-align: center;
+    font-size: 1.875rem; /* 3xl */
+    color: #fcd34d; /* amber-300 */
+    margin-bottom: 1.5rem; /* mb-6 */
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+#player-avatar {
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    transition: all 0.3s ease;
+}
+
+#player-xp-bar, #player-progress-bar {
+    transition: width 0.5s ease-out;
+}
+
+.hub-course-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+.hub-course-card.locked {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.hub-course-card:not(.locked):hover {
+    transform: scale(1.02);
+    border-color: #3b82f6;
+}
+/* ===================== PLAYER HUB STYLES END ===================== */
+
+
+/* --- Hub Styles (Old, can be merged or removed if redundant) --- */
 .hub-card {
     background: rgba(10, 10, 10, 0.6);
     backdrop-filter: blur(10px);
@@ -81,13 +132,6 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
     border-radius: 8px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
-}
-.hub-title {
-    font-family: 'Ma Shan Zheng', cursive;
-    text-align: center;
-    font-size: 1.875rem; /* 3xl */
-    color: #fcd34d; /* amber-300 */
-    margin-bottom: 1.5rem; /* mb-6 */
 }
 .hub-card:hover {
     border-color: rgba(252, 211, 77, 0.6);
@@ -218,24 +262,8 @@ body { font-family: 'Noto Sans SC', sans-serif; background-color: #0f172a; min-h
 }
 
 #continue-learning-card {
-    background: linear-gradient(to right, rgba(30, 64, 175, 0.5), rgba(17, 24, 39, 0.5));
+    background: linear-gradient(135deg, rgba(30, 64, 175, 0.5), rgba(17, 24, 39, 0.5));
     border: 1px solid #3b82f6;
-    border-radius: 12px;
-}
-
-#continue-learning-btn {
-    background: #3b82f6;
-}
-
-.course-card {
-    background: rgba(30, 41, 59, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-}
-
-.course-card:hover {
-    transform: scale(1.02);
-    border-color: #3b82f6;
 }
 
 /* ==================== NEW CHALLENGE CARD STYLES START ==================== */
