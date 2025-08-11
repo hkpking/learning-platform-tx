@@ -1,25 +1,27 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 4.0.2 - [FIX] Added complete set of admin panel element selectors.
+ * @version 5.0.0 - Refactored for new top-level view structure (Lobby, App, Admin).
  */
 import { AppState } from './state.js';
 
 export const UI = {
     elements: {
-        // Global elements
+        // --- Global Modals & Notifications ---
         notification: document.getElementById('notification'),
         factionModal: { container: document.getElementById('faction-selection-modal') },
         restartModal: { container: document.getElementById('restart-confirm-modal'), confirmBtn: document.getElementById('confirm-restart-btn'), cancelBtn: document.getElementById('cancel-restart-btn') },
         deleteConfirmModal: { container: document.getElementById('delete-confirm-modal'), message: document.getElementById('delete-confirm-message'), confirmBtn: document.getElementById('confirm-delete-btn'), cancelBtn: document.getElementById('cancel-delete-btn') },
 
-        // Top-level view containers
+        // --- Top-Level View Containers ---
         gameLobbyView: document.getElementById('game-lobby-view'),
         authView: document.getElementById('auth-view'),
         mainAppView: document.getElementById('main-app-view'),
+        adminView: document.getElementById('admin-view'),
         profileView: document.getElementById('profile-view'),
+        immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
         
-        // Game Lobby elements
+        // --- Game Lobby Elements ---
         lobby: {
             playerInfo: document.getElementById('lobby-player-info'),
             avatar: document.getElementById('lobby-avatar'),
@@ -31,13 +33,12 @@ export const UI = {
             plotTaskBtn: document.getElementById('plot-task-btn'),
             plotTaskTitle: document.getElementById('plot-task-title'),
             factionChallengeBtn: document.getElementById('faction-challenge-btn'),
-            leaderboardPanel: document.getElementById('leaderboard-panel-lobby'),
-            leaderboardTabs: document.querySelectorAll('.tab-btn'),
+            leaderboardTabs: document.querySelectorAll('#leaderboard-panel-lobby .tab-btn'),
             personalBoard: document.getElementById('leaderboard-content-personal'),
             factionBoard: document.getElementById('leaderboard-content-faction'),
         },
 
-        // Auth View elements
+        // --- Auth View Elements ---
         auth: {
             backToLobbyBtn: document.getElementById('back-to-lobby-btn'),
             form: document.getElementById('auth-form'),
@@ -51,12 +52,11 @@ export const UI = {
             fullNameInput: document.getElementById('full-name-input')
         },
 
-        // Main App (Learning) View elements
+        // --- Main App (Learning) Elements ---
         mainApp: { 
-            header: document.getElementById('main-header'), 
             backToHubBtn: document.getElementById('back-to-hub-btn-from-main'),
             profileViewBtn: document.getElementById('profile-view-btn'), 
-            adminViewBtn: document.getElementById('admin-view-btn'), 
+            adminViewBtn: document.getElementById('main-admin-view-btn'), 
             userGreeting: document.getElementById('user-greeting'), 
             restartBtn: document.getElementById('restart-btn'), 
             categoryView: document.getElementById('category-selection-view'), 
@@ -73,45 +73,31 @@ export const UI = {
             backToChaptersBtn: document.getElementById('back-to-chapters-btn'), 
         },
 
-        // Profile View elements
+        // --- Profile View Elements ---
         profile: {
             content: document.getElementById('profile-content'),
             backToMainAppBtn: document.getElementById('back-to-main-app-btn')
         },
         
-        // Immersive (Video/Document) Viewer
-        immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
-
-        // [FIXED] Added all admin panel element selectors
+        // --- Admin View Elements ---
         admin: {
-            container: document.getElementById('admin-management-view'),
+            container: document.getElementById('admin-view'),
             breadcrumb: document.getElementById('admin-breadcrumb'),
             backToLobbyBtn: document.getElementById('admin-back-to-lobby-btn'),
-            adminNav: document.querySelector('.admin-view-bg nav'),
-            
+            adminNav: document.querySelector('#admin-view nav'),
             categoryListView: document.getElementById('admin-category-list-view'),
             categoriesTableContainer: document.getElementById('admin-categories-table-container'),
-            addCategoryBtn: document.getElementById('admin-add-category-btn'),
-            
             chapterListView: document.getElementById('admin-chapter-list-view'),
             chapterListTitle: document.getElementById('admin-chapter-list-title'),
             chaptersTableContainer: document.getElementById('admin-chapters-table-container'),
-            addChapterBtn: document.getElementById('admin-add-chapter-btn'),
-
             sectionListView: document.getElementById('admin-section-list-view'),
             sectionListTitle: document.getElementById('admin-section-list-title'),
             sectionsTableContainer: document.getElementById('admin-sections-table-container'),
-            addSectionBtn: document.getElementById('admin-add-section-btn'),
-            
             blockEditorView: document.getElementById('admin-block-editor-view'),
             editorSectionTitle: document.getElementById('admin-editor-section-title'),
             blocksList: document.getElementById('admin-blocks-list'),
-            addNewBlockBtn: document.getElementById('admin-add-new-block-btn'),
-
             challengesListView: document.getElementById('admin-challenges-list-view'),
             challengesTableContainer: document.getElementById('admin-challenges-table-container'),
-            addChallengeBtn: document.getElementById('admin-add-challenge-btn'),
-
             modal: {
                 backdrop: document.getElementById('admin-modal-backdrop'),
                 container: document.getElementById('form-modal'),
@@ -123,15 +109,13 @@ export const UI = {
         },
     },
     showNotification(message, type = 'success') {
-        const el = document.getElementById('notification');
+        const el = this.elements.notification;
         el.textContent = message;
         el.className = "";
         el.classList.add(type, "show");
         setTimeout(() => el.classList.remove("show"), 3500);
     },
-    renderLoading(container) { 
-        container.innerHTML = `<div class="flex justify-center items-center p-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-400"></div></div>`; 
-    },
+    renderLoading(container) { container.innerHTML = `<div class="flex justify-center items-center p-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-400"></div></div>`; },
     renderError(c, m) { c.innerHTML = `<div class="text-center p-10 text-red-400">${m}</div>`; },
     renderEmpty(c, m) { c.innerHTML = `<div class="text-center p-10 text-gray-500">${m}</div>`; },
     
@@ -145,21 +129,11 @@ export const UI = {
     },
 
     switchCourseView(viewName) {
-        const mainView = this.elements.mainAppView;
-        const subViews = [
-            'category-selection-view',
-            'chapter-selection-view',
-            'chapter-detail-view',
-            'admin-management-view'
-        ];
-        subViews.forEach(viewId => {
-            const viewElement = document.getElementById(viewId);
-            if (viewElement) viewElement.classList.remove('active');
-        });
+        const container = this.elements.mainAppView;
+        container.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         const targetView = document.getElementById(viewName);
         if (targetView) {
             targetView.classList.add('active');
-            targetView.classList.remove('hidden');
         }
         AppState.current.courseView = viewName;
     },
