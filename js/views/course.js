@@ -35,10 +35,15 @@ export const CourseView = {
         cat.chapters.forEach(ch => grid.appendChild(ComponentFactory.createChapterCard(ch)));
     },
     async updateLeaderboard() {
+        // This function seems to be for a different leaderboard UI that is not currently visible.
+        // The main lobby leaderboard is updated in app.js.
+        // We will leave this function as is, in case it's used by a future feature.
         try {
             const board = await ApiService.fetchLeaderboard();
             AppState.leaderboard = board;
-            const list = UI.elements.leaderboardList;
+            // Assuming there's a leaderboard list element somewhere not in the current active HTML
+            const list = document.getElementById('leaderboard-list'); 
+            if (!list) return; // Exit if the element doesn't exist
             list.innerHTML = "";
             if (!board || board.length === 0) { list.innerHTML = `<p class="text-center text-sm text-gray-400">暂无排名</p>`; return; }
             board.forEach((p, i) => {
@@ -51,7 +56,7 @@ export const CourseView = {
                 item.innerHTML = `<div class="w-10 text-center text-xl">${rankBadge}</div><div class="flex-grow"><div class="font-bold text-white truncate">${displayName}</div><div class="text-sm text-gray-400">${p.points} 分</div></div>`;
                 list.appendChild(item);
             });
-        } catch (e) { console.error("Failed to update leaderboard:", e); UI.elements.leaderboardList.innerHTML = `<p class="text-center text-sm text-red-400">无法加载排名</p>`; }
+        } catch (e) { console.error("Failed to update leaderboard:", e); }
     },
     selectCategory(id) { AppState.current.categoryId = id; this.showChapterView(); },
     selectChapter(id) { AppState.current.chapterId = id; this.showDetailView(); },
@@ -131,9 +136,6 @@ export const CourseView = {
         try {
             await ApiService.saveUserProgress(AppState.user.id, { completed: Array.from(AppState.userProgress.completedBlocks), awarded: Array.from(AppState.userProgress.awardedPointsBlocks) });
             
-            // =================================================================
-            // NEW: Check for achievements after saving progress
-            // =================================================================
             await this.checkAndAwardAchievements(blockId, wasFirstCompletion);
 
             this.showDetailView(); // Refresh the view
@@ -144,9 +146,6 @@ export const CourseView = {
         }
     },
 
-    // =================================================================
-    // NEW: Achievement checking logic
-    // =================================================================
     async checkAndAwardAchievements(completedBlockId, wasFirstCompletion) {
         // --- 1. Check for "Complete First Block" ---
         if (wasFirstCompletion) {
@@ -178,15 +177,19 @@ export const CourseView = {
     openImmersiveViewer(type, url, title) {
         const { title: vTitle, content: vContent } = UI.elements.immersiveView;
         vTitle.textContent = title; vContent.innerHTML = '';
-        if (type === 'document') vContent.innerHTML = `<iframe src="${url}" allowfullscreen loading="lazy" title="嵌入的在线文档"></iframe>`;
+        if (type === 'document') vContent.innerHTML = `<iframe src="${url}" class="w-full h-full border-0" allowfullscreen loading="lazy" title="嵌入的在线文档"></iframe>`;
         else if (type === 'video') ComponentFactory.createVideoJsPlayer(vContent, url, { autoplay: true });
-        UI.switchTopLevelView('immersive');
+        UI.switchTopLevelView('immersive-viewer');
     },
     closeImmersiveViewer() {
-        if (AppState.current.topLevelView !== 'immersive') return;
-        if (AppState.current.activePlayer) AppState.current.activePlayer.dispose();
+        if (AppState.current.topLevelView !== 'immersive-viewer') return;
+        if (AppState.current.activePlayer) {
+            AppState.current.activePlayer.dispose();
+            AppState.current.activePlayer = null;
+        }
         UI.elements.immersiveView.content.innerHTML = ''; 
-        UI.switchTopLevelView('main');
+        // [FIXED] Changed 'main' to 'main-app' to correctly return to the learning view.
+        UI.switchTopLevelView('main-app');
     }
 };
 window.CourseView = CourseView;
