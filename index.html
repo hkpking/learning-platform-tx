@@ -43,8 +43,25 @@
 
     <main id="app-container" class="relative">
         
-        <!-- ==================== GAME LOBBY VIEW (Entry Point) ==================== -->
-        <section id="game-lobby-view" class="view active">
+        <!-- ==================== [NEW] LANDING VIEW (Splash Screen) ==================== -->
+        <section id="landing-view" class="view active">
+            <div id="opening-container">
+                <header class="fixed top-0 left-0 right-0 z-20 bg-transparent">
+                    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+                        <div class="text-xl font-bold text-white font-calligraphy tracking-widest">流程天命</div>
+                        <button id="landing-login-btn" class="text-white font-semibold hover:text-amber-400 transition-colors">登录 / 注册</button>
+                    </div>
+                </header>
+                <div class="ken-burns-bg"></div>
+                <div id="narrative-overlay">
+                    <p id="subtitle"></p>
+                    <button id="start-journey-btn" class="btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-8 rounded-lg mt-8 text-xl opacity-0 transition-opacity duration-1000">开启征途</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== GAME LOBBY VIEW ==================== -->
+        <section id="game-lobby-view" class="view">
             <div id="lobby-background" class="ken-burns-bg"></div>
             <nav id="lobby-top-nav">
                 <div id="lobby-player-info" class="flex items-center space-x-4 cursor-pointer">
@@ -59,7 +76,7 @@
                 </div>
             </nav>
             <div id="lobby-main-content">
-                <button id="plot-task-btn" class="lobby-main-button"><span id="plot-task-title">开启征途</span><span id="plot-task-subtitle">主线剧情</span></button>
+                <button id="plot-task-btn" class="lobby-main-button"><span id="plot-task-title">继续征途</span><span id="plot-task-subtitle">主线剧情</span></button>
                 <button id="faction-challenge-btn" class="lobby-side-button"><span>阵营挑战</span></button>
                 <div id="leaderboard-panel-lobby" class="lobby-side-panel">
                     <div class="panel-tabs"><button class="tab-btn active" data-tab="personal">个人榜</button><button class="tab-btn" data-tab="faction">阵营榜</button></div>
@@ -81,7 +98,7 @@
         <!-- ==================== AUTH VIEW ==================== -->
         <section id="auth-view" class="view flex-col items-center justify-center p-4">
             <div class="w-full max-w-md">
-                <div class="text-center mb-8"><button id="back-to-lobby-btn" class="text-blue-400 hover:text-blue-300">&larr; 返回大厅</button></div>
+                <div class="text-center mb-8"><button id="back-to-landing-btn" class="text-blue-400 hover:text-blue-300">&larr; 返回主页</button></div>
                 <div class="module-container p-8 rounded-xl shadow-2xl">
                     <h2 id="form-title" class="text-3xl font-bold text-center text-white mb-8">用户登录</h2>
                     <form id="auth-form">
@@ -109,7 +126,7 @@
             </div>
         </section>
 
-        <!-- ==================== ADMIN VIEW (Restored as a top-level view) ==================== -->
+        <!-- ==================== ADMIN VIEW ==================== -->
         <section id="admin-view" class="view admin-view-bg text-gray-800">
             <div class="flex-1 flex flex-row overflow-hidden w-full h-full">
                 <aside class="bg-gray-100 w-60 flex-shrink-0 border-r border-gray-200 flex flex-col">
