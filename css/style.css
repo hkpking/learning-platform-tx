@@ -100,7 +100,8 @@ body {
 
 #narrative-overlay {
     display: flex;
-    flex-direction: column-reverse; /* [NEW] This places the button above the text */
+    /* [FIXED] Changed from column-reverse to column to place the button above the text */
+    flex-direction: column; 
     justify-content: center;
     align-items: center;
     text-align: center;
