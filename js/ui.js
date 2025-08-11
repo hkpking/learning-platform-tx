@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 4.0.0 - Added Game Lobby UI elements.
+ * @version 4.0.1 - [FIX] Added the missing switchCourseView function to handle navigation within the main learning view.
  */
 import { AppState } from './state.js';
 
@@ -114,5 +114,40 @@ export const UI = {
             targetView.classList.add('active');
         }
         AppState.current.topLevelView = view;
+    },
+
+    /**
+     * [FIXED] Added this missing function.
+     * It handles switching between views *inside* the main learning area,
+     * such as the category grid, chapter grid, and detail view.
+     * @param {string} viewName - The name of the course view to activate (e.g., 'category-selection').
+     */
+    switchCourseView(viewName) {
+        const mainView = this.elements.mainAppView;
+        
+        // A list of all possible sub-views within the main application view
+        const subViews = [
+            'category-selection-view',
+            'chapter-selection-view',
+            'chapter-detail-view',
+            'admin-management-view'
+        ];
+
+        // Hide all sub-views first
+        subViews.forEach(viewId => {
+            const viewElement = document.getElementById(viewId);
+            if (viewElement) {
+                viewElement.classList.remove('active');
+            }
+        });
+
+        // Show the target sub-view
+        const targetView = document.getElementById(viewName + '-view');
+        if (targetView) {
+            targetView.classList.add('active');
+        }
+
+        // Update the global state
+        AppState.current.courseView = viewName;
     },
 };
