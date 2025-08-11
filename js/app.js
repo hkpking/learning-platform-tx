@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 4.0.1 - Fixed initialization error.
+ * @version 4.0.2 - Bug fixes for lobby modals and admin button.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -37,7 +37,8 @@ const App = {
         });
         UI.elements.lobby.logoutBtn.addEventListener('click', () => ApiService.signOut());
         UI.elements.lobby.plotTaskBtn.addEventListener('click', () => this.handlePlotTaskClick());
-        
+        UI.elements.lobby.factionChallengeBtn.addEventListener('click', () => this.showLobbyModal('faction-challenges'));
+
         // Bottom Nav
         UI.elements.lobby.bottomNav.addEventListener('click', (e) => {
             const button = e.target.closest('.lobby-nav-btn');
@@ -47,8 +48,7 @@ const App = {
             const action = button.dataset.action;
             switch(action) {
                 case 'show-all-quests':
-                    UI.switchTopLevelView('main-app');
-                    CourseView.showCategoryView();
+                    this.showLobbyModal('all-quests');
                     break;
                 case 'show-profile':
                     ProfileView.showProfileView();
@@ -69,6 +69,13 @@ const App = {
                 document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
                 document.getElementById(`leaderboard-content-${tabName}`).classList.add('active');
             });
+        });
+
+        // Lobby Modal Backdrop for closing
+        document.getElementById('lobby-modal-backdrop').addEventListener('click', (e) => {
+            if (e.target.id === 'lobby-modal-backdrop') {
+                this.hideLobbyModal();
+            }
         });
 
         // Auth Buttons
@@ -165,51 +172,34 @@ const App = {
             const points = profile.points || 0;
             const level = Math.floor(points / 100) + 1;
 
-            // Top Nav
             lobby.avatar.textContent = avatarChar;
             lobby.avatar.style.borderColor = factionInfo.color;
             lobby.playerName.textContent = profile.username || '天命人';
             lobby.playerLevel.textContent = level;
             lobby.logoutBtn.classList.remove('hidden');
-
-            // Bottom Nav
             lobby.adminNavBtn.style.display = profile.role === 'admin' ? 'flex' : 'none';
 
-            // Main Button
             const firstUncompleted = AppState.learningMap.flatStructure.find(b => !AppState.userProgress.completedBlocks.has(b.id));
             lobby.plotTaskTitle.textContent = firstUncompleted ? '继续征途' : '已完成';
 
-            // Leaderboards
             this.renderLeaderboards();
-            
-            // Faction Challenges
-            this.renderFactionChallenges();
-
         } else {
-            // Top Nav
             lobby.avatar.textContent = '?';
             lobby.avatar.style.borderColor = '#475569';
             lobby.playerName.textContent = '未登录';
             lobby.playerLevel.textContent = '??';
             lobby.logoutBtn.classList.add('hidden');
-            
-            // Bottom Nav
             lobby.adminNavBtn.style.display = 'none';
-
-            // Main Button
             lobby.plotTaskTitle.textContent = '开启征途';
 
-            // Leaderboards & Challenges
             UI.renderEmpty(lobby.personalBoard, '登录后查看排名');
             UI.renderEmpty(lobby.factionBoard, '登录后查看排名');
-            UI.renderEmpty(lobby.challengeContainer, '登录后查看挑战');
         }
     },
 
     renderLeaderboards() {
         const { personalBoard, factionBoard } = UI.elements.lobby;
 
-        // Personal
         if (!AppState.leaderboard || AppState.leaderboard.length === 0) {
             UI.renderEmpty(personalBoard, '暂无个人排名');
         } else {
@@ -222,7 +212,6 @@ const App = {
             }).join('');
         }
 
-        // Faction
         if (!AppState.factionLeaderboard || AppState.factionLeaderboard.length === 0) {
             UI.renderEmpty(factionBoard, '暂无部门排名');
         } else {
@@ -232,13 +221,6 @@ const App = {
             }).join('');
         }
     },
-
-    async renderFactionChallenges() {
-        // This is a placeholder. For now, the button is static.
-        // In the future, we can make this dynamic.
-        const container = UI.elements.lobby.challengeContainer;
-        // You can add logic here to show active challenges if needed.
-    },
     
     handlePlotTaskClick() {
         if (!AppState.user) {
@@ -247,6 +229,67 @@ const App = {
         }
         UI.switchTopLevelView('main-app');
         CourseView.showCategoryView();
+    },
+
+    showLobbyModal(modalType) {
+        const backdrop = document.getElementById('lobby-modal-backdrop');
+        document.querySelectorAll('.lobby-modal-content').forEach(m => m.classList.add('hidden'));
+
+        const modal = document.getElementById(`${modalType}-modal`);
+        const content = document.getElementById(`${modalType}-content`);
+        
+        if (modalType === 'all-quests') {
+            content.innerHTML = ''; // Clear previous content
+            const categories = AppState.learningMap.categories;
+            if (!categories || categories.length === 0) {
+                UI.renderEmpty(content, '暂无任务篇章');
+            } else {
+                categories.forEach(c => content.appendChild(ComponentFactory.createCategoryCard(c, !CourseView.isCategoryUnlocked(c.id))));
+            }
+        } else if (modalType === 'faction-challenges') {
+            this.renderFactionChallenges(content);
+        }
+
+        backdrop.classList.remove('hidden');
+        backdrop.classList.add('active');
+        modal.classList.remove('hidden');
+    },
+
+    hideLobbyModal() {
+        const backdrop = document.getElementById('lobby-modal-backdrop');
+        backdrop.classList.add('hidden');
+        backdrop.classList.remove('active');
+    },
+
+    async renderFactionChallenges(container) {
+        if (!AppState.activeChallenges || AppState.activeChallenges.length === 0) {
+            UI.renderEmpty(container, '当前没有阵营挑战');
+            return;
+        }
+
+        container.innerHTML = '';
+        for (const challenge of AppState.activeChallenges) {
+            const card = document.createElement('div');
+            card.className = 'challenge-card mb-4';
+            const progress = await ApiService.fetchFactionChallengeProgress(challenge.id, AppState.profile.faction);
+            const progressPercentage = parseFloat(progress).toFixed(1);
+            card.innerHTML = `
+                <h3 class="challenge-title">${challenge.title}</h3>
+                <p class="challenge-description">目标: 完成 <strong class="text-purple-300">${challenge.target_category_title || '指定'}</strong> 篇章</p>
+                <div class="mt-2">
+                    <div class="challenge-progress-bar-bg">
+                        <div class="challenge-progress-bar" style="width: ${progressPercentage}%;"></div>
+                    </div>
+                    <div class="challenge-meta">
+                        <span class="challenge-reward">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                            <span>${challenge.reward_points} 团队积分</span>
+                        </span>
+                        <span class="challenge-deadline">截止: ${new Date(challenge.end_date).toLocaleDateString()}</span>
+                    </div>
+                </div>`;
+            container.appendChild(card);
+        }
     },
 
     showFactionSelection() { UI.elements.factionModal.container.classList.remove('hidden'); UI.elements.factionModal.container.classList.add('flex'); },
