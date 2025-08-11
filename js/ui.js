@@ -1,7 +1,7 @@
 /**
  * @file ui.js
  * @description Centralizes DOM element selections and generic UI manipulation functions.
- * @version 6.0.0 - [REFACTOR] Added selectors for the new landing view.
+ * @version 6.0.1 - [REFACTOR] Added functions to toggle between narrative and auth form on the landing page.
  */
 import { AppState } from './state.js';
 
@@ -16,17 +16,32 @@ export const UI = {
         // --- Top-Level View Containers ---
         landingView: document.getElementById('landing-view'),
         gameLobbyView: document.getElementById('game-lobby-view'),
-        authView: document.getElementById('auth-view'),
         mainAppView: document.getElementById('main-app-view'),
         adminView: document.getElementById('admin-view'),
         profileView: document.getElementById('profile-view'),
         immersiveView: { container: document.getElementById('immersive-viewer-view'), title: document.getElementById('immersive-title'), content: document.getElementById('immersive-content'), closeBtn: document.getElementById('close-immersive-view-btn') },
         
-        // --- [NEW] Landing View Elements ---
+        // --- Landing View Elements ---
         landing: {
             loginBtn: document.getElementById('landing-login-btn'),
             startJourneyBtn: document.getElementById('start-journey-btn'),
             subtitle: document.getElementById('subtitle'),
+            narrativeContainer: document.getElementById('narrative-container'),
+            authContainer: document.getElementById('auth-container'),
+        },
+
+        // --- Auth Form Elements (now part of landing) ---
+        auth: {
+            backToLandingBtn: document.getElementById('back-to-landing-btn'),
+            form: document.getElementById('auth-form'),
+            title: document.getElementById('form-title'),
+            submitBtn: document.getElementById('submit-btn'),
+            prompt: document.getElementById('prompt-text'),
+            switchBtn: document.getElementById('switch-mode-btn'),
+            authInput: document.getElementById('auth-input'),
+            passwordInput: document.getElementById('password-input'),
+            fullNameInputContainer: document.getElementById('full-name-input-container'),
+            fullNameInput: document.getElementById('full-name-input')
         },
 
         // --- Game Lobby Elements ---
@@ -43,20 +58,6 @@ export const UI = {
             leaderboardTabs: document.querySelectorAll('#leaderboard-panel-lobby .tab-btn'),
             personalBoard: document.getElementById('leaderboard-content-personal'),
             factionBoard: document.getElementById('leaderboard-content-faction'),
-        },
-
-        // --- Auth View Elements ---
-        auth: {
-            backToLandingBtn: document.getElementById('back-to-landing-btn'),
-            form: document.getElementById('auth-form'),
-            title: document.getElementById('form-title'),
-            submitBtn: document.getElementById('submit-btn'),
-            prompt: document.getElementById('prompt-text'),
-            switchBtn: document.getElementById('switch-mode-btn'),
-            authInput: document.getElementById('auth-input'),
-            passwordInput: document.getElementById('password-input'),
-            fullNameInputContainer: document.getElementById('full-name-input-container'),
-            fullNameInput: document.getElementById('full-name-input')
         },
 
         // --- Main App (Learning) Elements ---
@@ -148,5 +149,18 @@ export const UI = {
             targetView.classList.add('active');
         }
         AppState.current.courseView = viewName;
+    },
+
+    showAuthForm() {
+        this.elements.landing.narrativeContainer.classList.add('hidden');
+        this.elements.landing.authContainer.classList.remove('hidden');
+        this.elements.landing.authContainer.classList.add('flex');
+    },
+
+    showNarrative() {
+        this.elements.landing.authContainer.classList.add('hidden');
+        this.elements.landing.authContainer.classList.remove('flex');
+        this.elements.landing.narrativeContainer.classList.remove('hidden');
+        this.elements.landing.narrativeContainer.classList.add('flex');
     },
 };
