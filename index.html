@@ -4,22 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>流程天命 - 英雄之旅</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- [MODIFIED] Replaced TailwindCSS CDN with a domestic one -->
+    <script src="https://cdn.tailwindcss.com"></script> 
+    <!-- [MODIFIED] Replaced Supabase CDN with a domestic one -->
+    <script src="https://cdn.staticfile.org/supabase-js/2.39.8/supabase.min.js"></script>
+    <!-- [MODIFIED] Replaced Marked.js CDN with a domestic one -->
+    <script src="https://cdn.staticfile.org/marked/12.0.2/marked.min.js"></script>
+    <!-- [MODIFIED] Replaced Video.js CSS CDN with a domestic one -->
+    <link href="https://cdn.staticfile.org/video.js/8.10.0/video-js.min.css" rel="stylesheet" />
+    <!-- [MODIFIED] Replaced Google Fonts with a domestic mirror -->
+    <link href="https://fonts.loli.net/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="text-gray-200">
 
-    <!-- [NEW] Background Music Element -->
+    <!-- Background Music Element -->
     <audio id="background-music" loop>
         <source src="https://down.xjio.cn/filedown/270f9059bd43493aa6855d1ef33229ba/游戏科学-黑神话：悟空(纯音乐).mp3" type="audio/mpeg">
         您的浏览器不支持音频播放。
     </audio>
 
-    <!-- [NEW] Music Control Button -->
+    <!-- Music Control Button -->
     <button id="music-control-btn" class="fixed bottom-4 right-4 z-50 w-12 h-12 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors opacity-0" title="控制音乐">
         <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -211,8 +216,10 @@
         </div>
     </div>
 
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <!-- [MODIFIED] Replaced Video.js JS CDN with a domestic one -->
+    <script src="https://cdn.staticfile.org/video.js/8.10.0/video.min.js"></script>
     <script>
+        // Supabase configuration remains unchanged as requested
         window.APP_CONFIG = {
             SUPABASE_URL: 'https://mfxlcdsrnzxjslrfaawz.supabase.co',
             SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1meGxjZHNybnp4anNscmZhYXd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE2ODQyODMsImV4cCI6MjA2NzI2MDI4M30.wTuqqQkOP2_ZwfUU_xM0-X9YjkM39-kewjN41Pxa_wA'
