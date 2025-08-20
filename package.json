@@ -1,0 +1,28 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "测试内容",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build-css": "./node_modules/.bin/tailwindcss -i css/input.css -o css/style.css"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hkpking/learning-platform-tx.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hkpking/learning-platform-tx/issues"
+  },
+  "homepage": "https://github.com/hkpking/learning-platform-tx#readme",
+  "devDependencies": {
+    "tailwindcss": "^4.1.12"
+  }
+}
