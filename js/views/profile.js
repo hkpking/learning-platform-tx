@@ -4,32 +4,24 @@ import { ApiService } from '../services/api.js';
 import { getFactionInfo } from '../constants.js';
 
 export const ProfileView = {
+    // [修改] showProfileView 函数
     async showProfileView() {
         UI.switchTopLevelView('profile');
         const container = UI.elements.profile.content;
-        UI.renderLoading(container); // [FIXED] Corrected the function call
+        UI.renderLoading(container);
 
         try {
+            // [优化] 不再需要请求用户基本信息，直接从 AppState 读取
             const userId = AppState.user.id;
             
-            const [profile, scoreData, achievements] = await Promise.all([
-                ApiService.getProfile(userId),
-                ApiService.getScoreInfo(userId),
-                ApiService.fetchUserAchievements(userId)
-            ]);
+            // 唯一需要单独请求的是成就数据，因为它不是每次都需要
+            const achievements = await ApiService.fetchUserAchievements(userId);
 
-            AppState.profile = { 
-                ...AppState.profile, 
-                ...profile, 
-                points: scoreData ? scoreData.points : AppState.profile.points,
-                username: scoreData ? scoreData.username : AppState.profile.username
-            };
-            
             const points = AppState.profile.points || 0;
             const totalBlocks = AppState.learningMap.flatStructure.length;
             const completedBlocks = AppState.userProgress.completedBlocks.size;
             const progressPercentage = totalBlocks > 0 ? ((completedBlocks / totalBlocks) * 100).toFixed(0) : 0;
-
+            
             container.innerHTML = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
                     <div class="md:col-span-1 text-center" id="profile-identity"></div>
@@ -127,6 +119,7 @@ export const ProfileView = {
 
                 try {
                     const updatedScoreInfo = await ApiService.updateUsername(AppState.user.id, newName);
+                    // [优化] 直接更新 AppState
                     AppState.profile.username = updatedScoreInfo.username;
                     UI.showNotification('姓名更新成功！', 'success');
                     this.renderIdentitySection();
