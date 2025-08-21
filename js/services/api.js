@@ -1,7 +1,7 @@
 /**
  * @file api.js
  * @description Encapsulates all interactions with the Supabase backend.
- * [v2.6.0] Added function to fetch faction challenge progress.
+ * @version 2.7.0 - [OPTIMIZATION] Merged profile and score fetching into a single function.
  */
 
 // Initialize the Supabase client immediately at the module level.
@@ -23,6 +23,31 @@ export const ApiService = {
         console.log("ApiService initialized with Supabase client.");
     },
 
+    // [新增] 用于统一获取用户核心信息的函数
+    async fetchUserProfileAndScore(userId) {
+        // 并行发起两个请求
+        const [profileRes, scoreRes] = await Promise.all([
+            this.db.from('profiles').select('role, faction').eq('id', userId).single(),
+            this.db.from('scores').select('username, points').eq('user_id', userId).single()
+        ]);
+
+        if (profileRes.error && profileRes.error.code !== 'PGRST116') {
+            console.error("Error fetching profile:", profileRes.error);
+            throw new Error('获取用户档案时出错。');
+        }
+
+        if (scoreRes.error && scoreRes.error.code !== 'PGRST116') {
+            console.error("Error fetching score info:", scoreRes.error);
+            throw new Error('获取用户分数信息时出错。');
+        }
+
+        // 合并数据，如果某个表没有数据，则返回 null 或默认值
+        const profileData = profileRes.data || { role: 'user', faction: null };
+        const scoreData = scoreRes.data || { username: null, points: 0 };
+
+        return { ...profileData, ...scoreData };
+    },
+
     async awardAchievement(achievementKey) {
         const { error } = await this.db.rpc('award_achievement', { achievement_key: achievementKey });
         if (error) { console.error(`Failed to award achievement [${achievementKey}]:`, error); }
@@ -34,13 +59,22 @@ export const ApiService = {
         return data.map(ua => ({ ...ua.achievements, earned_at: ua.earned_at }));
     },
 
+    // [修改] 让 signUp 函数可以接收并存储姓名
     async signUp(email, password, fullName) {
         const { data: authData, error: authError } = await this.db.auth.signUp({ email, password, });
         if (authError) throw authError;
         if (!authData.user) throw new Error('用户注册失败，无法获取新用户信息。');
+        
         const userId = authData.user.id;
+        
+        // 同时在 scores 表中创建记录
         const { error: scoreError } = await this.db.from('scores').insert({ user_id: userId, username: fullName });
-        if (scoreError) { console.error(`User and profile created, but failed to create score entry: ${scoreError.message}`); throw new Error('用户分数记录创建失败，请联系管理员。'); }
+        if (scoreError) {
+            console.error(`User and profile created, but failed to create score entry: ${scoreError.message}`);
+            // 注意：这里是一个简化的错误处理，在生产环境中可能需要更复杂的事务或补偿逻辑
+            throw new Error('用户分数记录创建失败，请联系管理员。');
+        }
+        
         return authData;
     },
 
@@ -82,11 +116,8 @@ export const ApiService = {
         return data;
     },
 
-    async getScoreInfo(userId) {
-        const { data, error } = await this.db.from('scores').select('username, points').eq('user_id', userId).single();
-        if (error && error.code !== 'PGRST116') { console.error("Error fetching score info:", error); throw new Error('获取用户分数信息时出错。'); }
-        return data;
-    },
+    // [已废弃] getScoreInfo - 功能已被 fetchUserProfileAndScore 替代
+    // async getScoreInfo(userId) { ... }
 
     async fetchFactionLeaderboard() {
         const { data, error } = await this.db.rpc('get_faction_leaderboard');
@@ -100,9 +131,6 @@ export const ApiService = {
         return data.map(c => ({...c, target_category_title: c.target_category?.title}));
     },
     
-    // =================================================================
-    // NEW CHALLENGE PROGRESS FUNCTION
-    // =================================================================
     async fetchFactionChallengeProgress(challengeId, faction) {
         const { data, error } = await this.db.rpc('get_single_faction_challenge_progress', {
             challenge_id_param: challengeId,
@@ -110,11 +138,10 @@ export const ApiService = {
         });
         if (error) {
             console.error(`Error fetching challenge progress for faction ${faction}:`, error);
-            return 0; // Return 0 as a fallback to prevent breaking the UI
+            return 0;
         }
         return data;
     },
-    // =================================================================
 
     async fetchChallengesForAdmin() {
         const { data, error } = await this.db.from('challenges').select('*, target_category:categories(title)').order('created_at', { ascending: false });
@@ -129,12 +156,8 @@ export const ApiService = {
         if (error) { console.error('Error finishing challenge:', error); throw new Error(`挑战结算失败: ${error.message}`); }
     },
 
-    async getProfile(userId) {
-        const { data, error } = await this.db.from('profiles').select('role, faction').eq('id', userId).single();
-        if (error && error.code === 'PGRST116') { return null; }
-        if (error) { console.error("Error fetching profile:", error); throw new Error('获取用户档案时出错。'); }
-        return data;
-    },
+    // [已废弃] getProfile - 功能已被 fetchUserProfileAndScore 替代
+    // async getProfile(userId) { ... }
 
     async updateProfileFaction(userId, faction) {
         const { data, error } = await this.db.from('profiles').update({ faction: faction, updated_at: new Date() }).eq('id', userId).select('role, faction').single();
