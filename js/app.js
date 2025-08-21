@@ -1,7 +1,7 @@
 /**
  * @file app.js
  * @description The main entry point for the application.
- * @version 7.0.0 - [REFACTOR] Lobby UI simplified, actions moved to bottom nav.
+ * @version 7.1.0 - [OPTIMIZATION] Centralized user data fetching on login.
  */
 import { AppState, resetUserProgressState } from './state.js';
 import { UI } from './ui.js';
@@ -80,32 +80,27 @@ const App = {
 
         controlBtn.addEventListener('click', togglePlayback);
 
-        // Autoplay logic
         const attemptAutoplay = () => {
             music.play().then(() => {
                 playIcon.classList.add('hidden');
                 pauseIcon.classList.remove('hidden');
             }).catch(() => {
-                // Autoplay was blocked, user must click.
                 playIcon.classList.remove('hidden');
                 pauseIcon.classList.add('hidden');
             });
         };
 
-        // Observer to control visibility and playback based on view
         const observer = new MutationObserver((mutations) => {
             mutations.forEach(mutation => {
                 if (mutation.attributeName === 'class') {
                     const isLandingActive = landingView.classList.contains('active');
                     if (isLandingActive) {
-                        controlBtn.classList.remove('opacity-0');
-                        controlBtn.classList.remove('pointer-events-none');
+                        controlBtn.classList.remove('opacity-0', 'pointer-events-none');
                     } else {
                         music.pause();
                         playIcon.classList.remove('hidden');
                         pauseIcon.classList.add('hidden');
-                        controlBtn.classList.add('opacity-0');
-                        controlBtn.classList.add('pointer-events-none');
+                        controlBtn.classList.add('opacity-0', 'pointer-events-none');
                     }
                 }
             });
@@ -113,19 +108,15 @@ const App = {
 
         observer.observe(landingView, { attributes: true });
 
-        // Initial check
         if (landingView.classList.contains('active')) {
-            controlBtn.classList.remove('opacity-0');
-            controlBtn.classList.remove('pointer-events-none');
+            controlBtn.classList.remove('opacity-0', 'pointer-events-none');
             attemptAutoplay();
         } else {
-            controlBtn.classList.add('opacity-0');
-            controlBtn.classList.add('pointer-events-none');
+            controlBtn.classList.add('opacity-0', 'pointer-events-none');
         }
     },
 
     bindEvents() {
-        // --- Landing View Events ---
         UI.elements.landing.loginBtn.addEventListener('click', () => UI.showAuthForm());
         UI.elements.landing.startJourneyBtn.addEventListener('click', () => {
             if (AppState.user) {
@@ -135,19 +126,16 @@ const App = {
             }
         });
 
-        // --- Auth Form Events (now on landing page) ---
         UI.elements.auth.backToLandingBtn.addEventListener('click', () => UI.showNarrative());
         UI.elements.auth.form.addEventListener('submit', (e) => AuthView.handleAuthSubmit(e));
         UI.elements.auth.switchBtn.addEventListener('click', (e) => AuthView.switchAuthMode(e));
         
-        // --- Game Lobby Events ---
         UI.elements.lobby.playerInfo.addEventListener('click', () => ProfileView.showProfileView());
         UI.elements.lobby.logoutBtn.addEventListener('click', async () => {
             await ApiService.signOut();
             UI.switchTopLevelView('landing'); 
         });
 
-        // [MODIFIED] Centralized bottom nav event handling
         UI.elements.lobby.bottomNav.addEventListener('click', (e) => {
             const button = e.target.closest('.lobby-nav-btn');
             if (!button || !AppState.user) return;
@@ -173,7 +161,6 @@ const App = {
             if (e.target.id === 'lobby-modal-backdrop') this.hideLobbyModal();
         });
 
-        // --- Other View Events ---
         UI.elements.mainApp.backToHubBtn.addEventListener('click', (e) => { e.preventDefault(); UI.switchTopLevelView('game-lobby'); });
         UI.elements.mainApp.profileViewBtn.addEventListener('click', () => ProfileView.showProfileView());
         UI.elements.mainApp.adminViewBtn.addEventListener('click', () => AdminView.showAdminView());
@@ -190,6 +177,7 @@ const App = {
         });
     },
 
+    // [修改] handleLogin 函数
     async handleLogin(user, navigate = true) {
         if (AppState.user && AppState.user.id === user.id) {
             if(navigate) UI.switchTopLevelView('game-lobby');
@@ -198,8 +186,11 @@ const App = {
         resetUserProgressState();
         AppState.user = user;
         try {
-            const [profile, scoreInfo] = await Promise.all([ ApiService.getProfile(user.id), ApiService.getScoreInfo(user.id) ]);
-            AppState.profile = { ...(profile || { role: 'user', faction: null }), username: scoreInfo?.username, points: scoreInfo?.points || 0 };
+            // [优化] 调用新的统一函数，一次性获取所有核心数据
+            const comprehensiveProfile = await ApiService.fetchUserProfileAndScore(user.id);
+
+            // 将获取到的完整数据存入 AppState.profile
+            AppState.profile = comprehensiveProfile;
             
             if (!AppState.profile.faction) {
                 this.showFactionSelection();
@@ -265,7 +256,6 @@ const App = {
             lobby.playerLevel.textContent = level;
             lobby.logoutBtn.classList.remove('hidden');
             lobby.adminNavBtn.style.display = profile.role === 'admin' ? 'flex' : 'none';
-            // [REMOVED] Logic for the old plot task button
             this.renderLeaderboards();
         } else {
             lobby.avatar.textContent = '?';
